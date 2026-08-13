@@ -1,0 +1,14 @@
+spec: Unholy Death Knight
+version: 12.1
+updated: 2026-08-13
+status: PROVISIONAL
+rules:
+  sudden_doom:
+    priority: high
+    single_target_consumer: Death Coil
+    aoe_consumer: Epidemic
+  aoe:
+    sudden_doom_epidemic_priority: true
+live_verify:
+  epidemic_order_model: true
+  note: "Do not freeze final ordering until SimC/live logs stabilize."
