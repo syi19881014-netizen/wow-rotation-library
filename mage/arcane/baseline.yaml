@@ -1,0 +1,27 @@
+spec: Arcane Mage
+version: 12.1
+updated: 2026-08-13
+status: PROVISIONAL
+source_notes:
+  - "SimulationCraft: [Mage] Arcane APL Updates (#11707), Better opener"
+openers:
+  simc_spellfire_spheres:
+    status: PROVISIONAL
+    steps_summary:
+      - potion
+      - arcane_surge
+      - precast_arcane_blast
+  conventional_live:
+    status: PROVISIONAL
+    steps_summary:
+      - precast_arcane_blast
+      - arcane_orb
+      - long_duration_potion_or_trinket
+      - arcane_surge
+      - arcane_barrage
+      - touch_of_the_magi_during_barrage_travel
+window_constraint:
+  touch_of_the_magi_seconds: 45
+  arcane_surge_seconds: 90
+  principle: "Do not delay Touch enough to desynchronize the following Arcane Surge cycle."
+validation: "Keep both openers for live A/B validation; do not delete either yet."
