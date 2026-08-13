@@ -1,0 +1,41 @@
+spec: Subtlety Rogue
+version: 12.1
+updated: 2026-08-13
+status: STABLE
+source_notes:
+  - "SimulationCraft: [Subtlety] 12.1 Update (#11704)"
+shadow_dance:
+  Deathstalker:
+    energy_floor_approx: 30
+    combo_points: "prefer low CP entry"
+    evaluate:
+      - darkest_night
+      - deathstalkers_mark_stacks
+      - target_count
+      - shadow_blades_timing
+  Trickster:
+    energy_floor_approx: 30
+    combo_points: "prefer high CP entry, approximately 6+"
+    require_secret_technique_ready: true
+    evaluate_shadow_blades_timing: true
+goremaws_bite:
+  role: "Dance/Ancient Arts window tool, not generic builder"
+  state: GOREMAW_WINDOW
+ancient_arts:
+  state: APEX_PREP_STATE
+  track:
+    - shadow_techniques_stacks
+    - ancient_arts_state
+    - supercharger_state
+    - secret_technique_cooldown
+aoe:
+  finisher_threshold_depends_on:
+    - hero_talent
+    - target_count
+prepull:
+  supercharger_preparation:
+    status: STABLE
+    module: PREPULL_OPTIMIZATION
+    isolated_from_combat_rotation: true
+live_verify:
+  coup_de_grace_gcd_bug: "~1.2s observed behavior; do not freeze as permanent design"
