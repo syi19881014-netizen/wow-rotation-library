@@ -1,0 +1,32 @@
+spec: Assassination Rogue
+version: 12.1
+observed: 2026-08-14
+status: PROVISIONAL
+scope: Season 2 SimC branch versus currently published practical guide
+source_commit: bf2d6614637191087c6e2a09c74cea0930ea7b43
+changes:
+  builder_logic:
+    simc:
+      - "Removed the Deathstalker single-target Fan of Knives / ~3 Unshakeable Drive Mutilate exception."
+      - "Mutilate/Ambush are now low-target generators; Fan of Knives is target-count gated with Blindside/Clear the Witnesses state."
+    practical_guide_conflict:
+      - "Wowhead 12.1 PTR guide still states that the Deathstalker M+ build uses Fan of Knives in single target and Mutilate at three Unshakeable Drive stacks."
+    policy: "Do not overwrite the launch/live-guide branch until Season 2 live WCL or updated theorycrafter guidance resolves the conflict."
+  envenom:
+    simc:
+      - "Envenom when buff remaining <=1s or Deathmark is active."
+      - "Also spend at energy >70% or fight remains <15s."
+      - "In AoE/dying-target cycles, spend earlier at energy >30% when target TTD <12s or target_count >=4."
+  aoe_cooldown_admission:
+    simc: "With Scent of Blood in multi-target, gate the cooldown list until stacks reach min(2 * talent_rank * target_count, 20); single target or no Scent of Blood bypasses the gate."
+  item_branch:
+    simc: "Font of Venomous Rage gets dedicated off-GCD alignment around Lingering Darkness / Deathmark downtime."
+automation_implications:
+  - "Add season/build gating before selecting the Deathstalker M+ builder rule."
+  - "Represent Scent of Blood as an AoE burst-admission state, not a simple priority action."
+  - "Keep Envenom late-refresh and anti-overcap logic configurable."
+  - "Keep Font of Venomous Rage item logic isolated from the core baseline."
+evidence_grade:
+  simc: HIGH_FOR_THEORETICAL_BASELINE
+  wowhead_practical_guide: MEDIUM_HIGH_FOR_PRACTICAL_CURRENT_GUIDE
+  live_wcl_season2: PENDING
