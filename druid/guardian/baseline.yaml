@@ -1,0 +1,29 @@
+spec: Guardian Druid
+version: 12.1
+updated: 2026-08-13
+status: STABLE
+source_notes:
+  - "SimulationCraft: Guardian Season 2 APL changes"
+GUARDIAN_RAGE_ARBITRATION:
+  priority:
+    - survival_rage_reserve
+    - ironfur_coverage
+    - gory_fur_proc
+    - wild_guardian_proc_generation
+    - maul_raze_target_and_build_decision
+    - avoid_thrash_mangle_reset_waste
+    - berserk_incarnation_lunar_beam_alignment
+survival:
+  expected_physical_damage: required_input
+  defensive_reserve: required
+  forbid_blind_simc_rage_threshold_copy: true
+gory_fur:
+  bidirectional_resource_proc_loop: true
+elunes_chosen:
+  moonfire_spam_to_reduce_lunar_beam_cd: false
+reset_management:
+  avoid_thrashing_mangle_ready_when_reset_is_imminent: true
+advanced_optional:
+  SAFE_CATWEAVE:
+    default_enabled: false
+    status: encounter_specific
