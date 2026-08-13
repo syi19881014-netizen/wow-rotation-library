@@ -1,0 +1,37 @@
+spec: Frost Mage
+version: 12.1
+updated: 2026-08-13
+status: STABLE
+source_notes:
+  - "SimulationCraft: [Mage] Frost 12.1 APL and profile update (#11705)"
+hero_talent_rotations:
+  Frostfire:
+    separate_rotation: true
+  Spellslinger:
+    separate_rotation: true
+blizzard:
+  fixed_target_threshold: false
+  inputs:
+    - freezing_winds
+    - freezing_rain
+    - hero_talent
+    - target_count
+freezing_consumption:
+  thresholds_are_branch_specific: true
+  exact_values: LIVE_VERIFY
+ray_of_frost:
+  cast_policy: CAN_CLIP_IF
+  clip_condition: "Configured Fingers of Frost / benefit condition met"
+burst_sync_score:
+  enabled: true
+  inputs:
+    - frozen_orb
+    - comet_storm
+    - glacial_spike
+    - ray_of_frost
+    - freezing_stacks
+    - fingers_of_frost
+    - icicles
+    - frostfire_empowerment
+    - brain_freeze
+    - thermal_void
