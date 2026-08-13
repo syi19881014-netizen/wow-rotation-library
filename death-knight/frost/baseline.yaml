@@ -1,0 +1,19 @@
+spec: Frost Death Knight
+version: 12.1
+updated: 2026-08-13
+status: STABLE
+rules:
+  frostwyrms_fury:
+    align_with_pillar_of_frost: true
+  killing_machine:
+    wait_for_two_stacks: false
+    priority_when_stacks_gte: 1
+    avoid_proc_overcap: true
+  target_branches:
+    obliterate_vs_frostscythe: "target-count/build dependent"
+    frost_strike_vs_glacial_advance: "target-count/build dependent"
+  hero_talent:
+    Deathbringer:
+      principle: "Optimize recall/buff stacking inside Pillar."
+    Rider:
+      principle: "Use timing to maximize Horsemen/Strength overlap around Pillar."
