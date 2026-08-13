@@ -1,0 +1,30 @@
+version: 1
+updated: 2026-08-13
+status: STABLE
+cast_admission_layer:
+  principle: "Can this action be safely/beneficially admitted now?" 
+  precedes: raw_priority
+cast_policy:
+  MUST_COMPLETE:
+    description: "Once admitted and started, protect the cast unless an encounter-critical override fires."
+  CAN_CLIP_IF:
+    description: "Allow early termination when an explicit measurable condition is met."
+  FREE_TO_INTERRUPT:
+    description: "No rotation-level protection required."
+prepull_optimization:
+  isolated_from_combat: true
+branch_dimensions:
+  - hero_talent
+  - set_bonus
+  - build_type
+  - encounter_context
+  - target_count
+  - target_survival
+  - movement_risk
+  - resource_state
+threshold_policy:
+  unfrozen_values: configurable
+  tag: LIVE_VERIFY
+versioning:
+  preserve_superseded_rules: true
+  record_reason_and_evidence: true
