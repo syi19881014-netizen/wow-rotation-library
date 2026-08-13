@@ -1,0 +1,22 @@
+project: 魔兽循环
+wow_version: "12.1 / Midnight"
+updated: 2026-08-13
+specs:
+  rogue:
+    assassination: rogue/assassination/baseline.yaml
+    outlaw: rogue/outlaw/baseline.yaml
+    subtlety: rogue/subtlety/baseline.yaml
+  mage:
+    arcane: mage/arcane/baseline.yaml
+    fire: mage/fire/baseline.yaml
+    frost: mage/frost/baseline.yaml
+  death_knight:
+    blood: death-knight/blood/baseline.yaml
+    frost: death-knight/frost/baseline.yaml
+    unholy: death-knight/unholy/baseline.yaml
+  monk:
+    windwalker: monk/windwalker/baseline.yaml
+  druid:
+    guardian: druid/guardian/baseline.yaml
+common:
+  architecture: common/architecture.yaml
