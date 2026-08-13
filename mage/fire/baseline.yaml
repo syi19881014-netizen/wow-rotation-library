@@ -1,0 +1,22 @@
+spec: Fire Mage
+version: 12.1
+updated: 2026-08-13
+status: STABLE
+pyroclasm:
+  cast_policy: MUST_COMPLETE
+  combustion_alignment: true
+  protected_cast_does_not_block_off_gcd_fire_blast: true
+fire_blast_weave:
+  stable:
+    - "Heating Up -> Fire Blast -> Hot Streak remains valid during protected hardcasts when appropriate."
+    - "Prevent Fire Blast charge overcap."
+  provisional:
+    - "During Pyroclasm Pyroblast hardcast, Fire Blast may be used without Heating Up/Hot Streak under specific conditions."
+    - "A sufficiently long hardcast may permit two Fire Blast weaves."
+  provisional_status: LIVE_VERIFY
+superseded:
+  - rule: "Always suppress Fire Blast during Pyroclasm Flamestrike hardcast."
+    status: SUPERSEDED
+architecture_note: "Separate CAST_POLICY from allowed off-GCD weave actions."
+source_notes:
+  - "SimulationCraft: small adjustments to fire"
