@@ -1,0 +1,33 @@
+spec: Assassination Rogue
+version: 12.1
+updated: 2026-08-13
+status: PROVISIONAL
+implacable:
+  superseded_rule:
+    status: SUPERSEDED
+    rule: "Intentionally let Envenom fall as a fixed optimization target."
+  current_rule:
+    pool_energy: true
+    refresh_envenom_late: true
+    avoid_energy_overcap: true
+    avoid_combo_point_overcap: true
+    exact_refresh_threshold: LIVE_VERIFY
+deathstalker_mplus_builder:
+  status: PROVISIONAL
+  inputs:
+    - hero_talent
+    - build_type
+    - target_count
+    - unshakeable_drive_stacks
+    - deathstalkers_mark_state
+    - energy
+    - combo_points
+    - apex_state
+  rule:
+    when: "hero_talent=Deathstalker and build_type=M+"
+    default_builder: Fan of Knives
+    mutilate_condition: "Unshakeable Drive approximately 3 stacks"
+    threshold_status: LIVE_VERIFY
+source_notes:
+  - "Live guide: Deathstalker M+ can use Fan of Knives as default builder even on one target."
+  - "SimulationCraft: Adjust Unshakeable Drive Timing; underlying consumption timing corrected to match logs."
