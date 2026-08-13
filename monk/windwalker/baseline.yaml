@@ -1,0 +1,46 @@
+spec: Windwalker Monk
+version: 12.1-MID2
+updated: 2026-08-13
+status: STABLE
+source_notes:
+  - "SimulationCraft: [Monk] WW APL update for MID2 (#11717)"
+RESOURCE_MANAGER:
+  - energy_overcap_prevention
+  - chi_overcap_prevention
+  - zenith_resource_mode
+PROC_MANAGER:
+  - dance_of_chiji
+  - blackout_kick_proc
+BURST_STATE:
+  - heart_of_the_jade_serpent
+  - heart_expiring
+  - celestial_conduit_admission
+  - zenith
+HERO_TALENT:
+  - Shado-Pan
+  - Conduit_of_the_Celestials
+TARGET_BRANCH:
+  - single_or_two_target
+  - three_plus_aoe
+zenith:
+  suppress_unnecessary_tiger_palm: true
+  prioritize:
+    - high_value_spenders
+    - reset_fists_of_fury
+    - reset_rising_sun_kick
+    - free_blackout_kick
+heart_window:
+  avoid_immediate_celestial_conduit_overlap: true
+  expiring_window_priority: "Use high-value abilities such as Fists of Fury before expiry when beneficial."
+future:
+  S2_4PC_FOF_TO_SCK:
+    status: FUTURE
+    targets: "2+"
+    effect: "Raise Spinning Crane Kick priority after Fists of Fury set interaction."
+live_verify:
+  s2_4pc_single_target_sck: true
+  zenith_encounter_alignment_thresholds: true
+encounter_specific:
+  touch_of_karma_damage_soak:
+    default_enabled: false
+    risk: high
