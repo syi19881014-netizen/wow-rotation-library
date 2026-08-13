@@ -1,0 +1,14 @@
+spec: Blood Death Knight
+version: 12.1
+updated: 2026-08-13
+status: STABLE
+launch_week_without_s2_set:
+  rewrite_core_rotation: false
+future:
+  S2_BLOOD_DEBT_MARROWREND:
+    status: FUTURE
+    enabled_when: S2_SET_ACTIVE
+    rule_summary:
+      - "At 10 Blood Debt stacks, evaluate Dancing Rune Weapon alignment before consuming."
+      - "If DRW is imminent, hold consumption for the final pre-DRW GCD when appropriate."
+      - "If a pull is ending and the next pack is soon, holding for the next pack can be beneficial."
