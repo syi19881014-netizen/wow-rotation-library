@@ -1,0 +1,53 @@
+spec: Arms Warrior
+version: 12.1
+updated: 2026-08-14
+status: PROVISIONAL
+scope:
+  hero_talent: Slayer
+  phase: Execute
+rules:
+  executioners_precision:
+    trigger_stacks: 2
+    raid_single_target:
+      action: Mortal Strike
+      priority: high
+      extra_gate: none
+      rationale: "Current SimC removed the old Rend<2s / Martial Prowess=3 admission gate once Executioner's Precision reaches 2 stacks; current Wowhead practical priority also lists Mortal Strike at 2 stacks during Slayer Execute."
+    mythic_plus:
+      action: Mortal Strike
+      require_colossus_smash: true
+      rationale: "Current Wowhead and Method practical guides retain a Colossus Smash gate for the 2-stack Executioner's Precision Mortal Strike in M+/practical play."
+    automation:
+      state_inputs:
+        - hero_talent
+        - execute_phase
+        - executioners_precision_stacks
+        - colossus_smash_debuff
+        - content_type
+        - target_count
+        - rage
+        - sudden_death
+      admission_order:
+        - "If Slayer + Execute phase + EP stacks=2, evaluate Mortal Strike admission before generic Execute filler."
+        - "Raid/ST branch: admit immediately after higher cooldown/Bladestorm priorities."
+        - "M+ branch: require Colossus Smash until live logs/theorycraft resolve the practical-vs-SimC divergence."
+  superseded_generic_gate:
+    rule: "EP stacks=2 AND (Rend remains<2s OR Martial Prowess stacks=3)"
+    status: SUPERSEDED
+    note: "Superseded for generic Slayer Execute baseline by SimC commit f61263a; retained only for traceability."
+evidence:
+  simc:
+    commit: f61263a886b8e8bd8b41e9ace62ea5ddcc5589a4
+    date: 2026-08-13
+    summary: "Arms APL uses Executioner's Precision again; Mortal Strike at 2 EP stacks no longer requires Rend<2s or Martial Prowess=3."
+  practical:
+    wowhead:
+      summary: "Slayer Execute priority uses Mortal Strike at two EP stacks; Mythic+ note gates this use to Colossus Smash."
+    method:
+      summary: "Executioner's Precision Execute rotation uses Mortal Strike at 2 stacks AND Colossus Smash on target."
+confidence:
+  raid_single_target: PROVISIONAL
+  mythic_plus: PROVISIONAL
+live_verify:
+  - "Whether top live raid logs consistently spend 2 EP stacks immediately outside Colossus Smash."
+  - "Whether Mythic+ high-end play should universally retain the Colossus Smash gate across target counts/builds."
