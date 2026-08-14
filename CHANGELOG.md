@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-14 — Arms Slayer Executioner's Precision execute update
+
+### Provisional / practical split preserved
+- SimulationCraft commit `f61263a` (2026-08-13) changed the Slayer Execute APL so Mortal Strike is used whenever Executioner's Precision reaches 2 stacks; the previous extra gate `(Rend remains <2s OR Martial Prowess stacks=3)` was removed.
+- Current Wowhead Midnight Arms practical priority agrees with 2-stack Executioner's Precision -> Mortal Strike for Slayer Execute, but explicitly limits this behavior to Colossus Smash windows in Mythic+ builds.
+- Current Method 12.0.7 Arms Execute rotation is even more conservative and requires both 2 Executioner's Precision stacks and Colossus Smash on the target.
+- Added `warrior/arms/baseline.yaml` as `PROVISIONAL`: raid/ST branch admits Mortal Strike immediately at 2 EP stacks after higher cooldown priorities; M+ branch retains the Colossus Smash gate pending live-log/theorycrafter validation.
+- The former generic `EP=2 AND (Rend<2s OR Martial Prowess=3)` rule is retained as `SUPERSEDED` for traceability.
+
 ## 2026-08-14 — Assassination Season 2 APL divergence
 
 ### Provisional / conflict preserved
