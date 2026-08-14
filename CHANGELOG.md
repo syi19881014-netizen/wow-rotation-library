@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-15 — Marksmanship Hunter Unload / Precise Shots channel-end interaction
+
+### Provisional machine-execution branch added
+- SimulationCraft commit `94f7e089` (2026-08-14) models a live Unload timing quirk: the second Unload shot at Rapid Fire channel end consumes Precise Shots on a slight delay (10 ms in SimC bugs mode).
+- The commit explicitly notes that this permits a Precise Shots spender to be queued/clipped at the Rapid Fire channel boundary so both the second Unload shot and the Arcane Shot/Multi-Shot spender can benefit before Precise Shots is consumed.
+- Current Wowhead and Method Marksmanship practical guides still describe the normal flow as keeping Rapid Fire/Aimed Shot rolling and spending Precise Shots immediately after the generator; neither currently documents deliberate Unload channel clipping.
+- Added `hunter/marksmanship/baseline.yaml` as `PROVISIONAL`: retain normal full-channel -> Precise Shots spender as the production/practical default, but expose a machine-execution `CAN_CLIP_IF(...)` branch at the final channel boundary.
+- Exact timing, latency tolerance, and preservation of the final Rapid Fire tick are `LIVE_VERIFY`; remove the optimization if Blizzard fixes the delayed-consumption behavior.
+
 ## 2026-08-14 — Arms Slayer Executioner's Precision execute update
 
 ### Provisional / practical split preserved
