@@ -1,0 +1,55 @@
+spec: Marksmanship Hunter
+version: 12.1
+updated: 2026-08-15
+status: PROVISIONAL
+scope:
+  talent: Unload
+  mechanic: Rapid Fire channel-end / Precise Shots consumption
+rules:
+  unload_precise_shots_channel_end:
+    behavior: "The second Unload shot fired at Rapid Fire channel end consumes Precise Shots on a slight delay on live behavior as modeled by SimC bugs mode."
+    theoretical_optimization:
+      action: "Queue/clip a Precise Shots spender at the final Rapid Fire channel boundary so both the second Unload shot and the spender can benefit from Precise Shots before the buff is consumed."
+      status: PROVISIONAL
+      rationale: "SimulationCraft commit 94f7e089 explicitly models the delayed consumption and notes that it allows Rapid Fire channels to be clipped with Precise Shots spenders for double benefit."
+    practical_baseline:
+      action: "Complete Rapid Fire normally, then spend Precise Shots with Arcane Shot on single target or Multi-Shot where appropriate."
+      status: STABLE_PRACTICAL
+      rationale: "Current Wowhead and Method practical rotation guidance emphasizes keeping Rapid Fire rolling and spending Precise Shots immediately after generated procs; neither currently documents deliberate channel clipping for Unload."
+    automation:
+      cast_policy: "CAN_CLIP_IF(final_channel_boundary AND precise_shots_up AND valid_precise_shots_spender AND no_higher_priority_interrupt_risk)"
+      state_inputs:
+        - unload_talented
+        - rapid_fire_channeling
+        - rapid_fire_channel_remaining
+        - unload_sequence_state
+        - precise_shots_stacks
+        - target_count
+        - trick_shots_state
+        - arcane_shot_usable
+        - multi_shot_usable
+        - latency_or_execution_margin
+      safeguards:
+        - "Do not early-cancel Rapid Fire before its final damage/talent-relevant tick merely to chase this interaction."
+        - "Exact queue/clipping timing remains LIVE_VERIFY because SimC models a 10 ms delayed Precise Shots consumption for the second Unload shot, while public practical guides do not yet expose a reproducible player-facing timing window."
+        - "Disable this optimization if Blizzard fixes the delayed-consumption bug or if live logs/theorycraft fail to show a repeatable gain."
+evidence:
+  simc:
+    commit: 94f7e089da69c54b46d40a7a553e81f15334d4c7
+    date: 2026-08-14
+    summary: "[Hunter] Unload clipping bug: second Unload shot delays Precise Shots consumption by 10 ms in bugs mode, explicitly allowing Rapid Fire channels to be clipped with Precise Shots spenders so both benefit."
+  practical:
+    wowhead:
+      summary: "Current Marksmanship rotation guide says every Precise Shots proc should be spent and generally follows Aimed Shot/Rapid Fire with Arcane Shot or Multi-Shot; it does not currently document deliberate Unload channel clipping."
+    method:
+      summary: "Current Marksmanship guide prioritizes keeping Rapid Fire/Aimed Shot on cooldown and preventing Precise Shots overcap; it does not currently document deliberate Unload channel clipping."
+  official:
+    summary: "Blizzard's published Unload description confirms extra Arcane/Kill Shot behavior at Rapid Fire start/end but does not document the delayed Precise Shots consumption interaction."
+confidence:
+  mechanic_exists_in_simc_live_bug_model: HIGH
+  practical_gain_and_exact_timing: LIVE_VERIFY
+  production_default: PRACTICAL_BASELINE
+live_verify:
+  - "Confirm the exact safe channel-end queue window under real latency and whether the final Rapid Fire tick is always preserved."
+  - "Check top raid/M+ logs or hunter theorycrafter updates for repeatable use of Arcane Shot/Multi-Shot at the Unload channel boundary."
+  - "Revert/remove the clipping branch if Blizzard hotfixes Precise Shots consumption timing."
