@@ -1,6 +1,6 @@
 project: 魔兽循环
 wow_version: "12.1 / Midnight"
-updated: 2026-08-13
+updated: 2026-08-14
 specs:
   rogue:
     assassination: rogue/assassination/baseline.yaml
@@ -18,5 +18,7 @@ specs:
     windwalker: monk/windwalker/baseline.yaml
   druid:
     guardian: druid/guardian/baseline.yaml
+  warrior:
+    arms: warrior/arms/baseline.yaml
 common:
   architecture: common/architecture.yaml
