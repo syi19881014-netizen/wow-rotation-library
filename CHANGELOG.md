@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-16 — Marksmanship Rapid Fire clipping promoted into SimC APL
+
+### Theoretical branch strengthened; practical production still LIVE_VERIFY
+- SimulationCraft commit `6cad471` (2026-08-15 UTC) changes the actual Marksmanship APL, not just the bug model: Rapid Fire now uses `interrupt_if=ticks_remain<2&buff.precise_shots.up&!gcd.remains` with immediate/global interrupt flags in Dark Ranger and Sentinel single-target and AoE branches.
+- This materially strengthens the previous Unload/Precise Shots clipping finding from a modeled mechanic into an explicit SimC theoretical rotation rule.
+- Current public Wowhead and Method Marksmanship rotation guides still describe the normal full-channel Rapid Fire -> Precise Shots spender flow and do not document deliberate final-boundary clipping, so the practical production default remains full channel pending Season 2 logs/theorycrafter validation.
+- Updated `hunter/marksmanship/baseline.yaml`: the machine branch now mirrors SimC's exact admission shape (`ticks_remain < 2`, Precise Shots active, GCD free) while preserving safeguards against earlier clips or generic channel cancellation.
+
 ## 2026-08-16 — Outlaw 12.1 WCL/API validation and runtime corrections
 
 ### Current spell identities and Coup admission validated
@@ -77,12 +85,3 @@ Imported all rotation-library decisions that had been explicitly accepted or mar
 - Fire Mage no-Heating-Up Pyroclasm Fire Blast weave timing and possible double-weave.
 - Arcane Mage competing opener variants.
 - Unholy DK Epidemic ordering.
-
-### Future set branches
-- Outlaw Rogue S2 Fang Strike early Dispatch.
-- Blood DK S2 Blood Debt / Marrowrend.
-- Windwalker Monk S2 4pc FoF -> SCK; pure-ST SCK remains LIVE_VERIFY.
-
-### Superseded
-- Assassination: intentionally dropping Envenom as a fixed Implacable optimization target.
-- Fire: blanket prohibition on Fire Blast during Pyroclasm Flamestrike hardcast.
