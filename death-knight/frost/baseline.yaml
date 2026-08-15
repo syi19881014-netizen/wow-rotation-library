@@ -1,6 +1,6 @@
 spec: Frost Death Knight
 version: 12.1
-updated: 2026-08-13
+updated: 2026-08-15
 status: STABLE
 rules:
   frostwyrms_fury:
@@ -17,3 +17,18 @@ rules:
       principle: "Optimize recall/buff stacking inside Pillar."
     Rider:
       principle: "Use timing to maximize Horsemen/Strength overlap around Pillar."
+season2_tuning_2026_08_14:
+  status: PROVISIONAL
+  source: "SimulationCraft commit fcb291e (next-week tuning overrides)"
+  changes:
+    baseline_aura: "Frost aura from -12% to -3% (net +9% baseline damage)"
+    freezing_tempest_attack_speed_per_stack: "2% -> 1%"
+    freezing_tempest_icy_death_torrent_bonus_per_stack: "4% -> 2%"
+  production_effect:
+    core_priority_rewrite: false
+    remorseless_winter_uptime_rule_change: false
+    note: "The tuning redistributes power away from the Season 2 Freezing Tempest/IDT package into baseline abilities. Keep the existing priority until post-tuning SimC/profile and live-log evidence shows a rotation change."
+  live_verify:
+    - "Re-sim DW vs 2H and Breath/Obliteration-style build gaps after tuning."
+    - "Check whether reduced IDT/attack-speed scaling materially lowers the value of maximizing Freezing Tempest stacks in movement/uptime-constrained encounters."
+    - "Do not create an extra GCD or hold rule solely to chase Freezing Tempest stacks unless post-tuning logs support it."
