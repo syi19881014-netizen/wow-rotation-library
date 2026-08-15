@@ -22,5 +22,7 @@ specs:
     arms: warrior/arms/baseline.yaml
   hunter:
     marksmanship: hunter/marksmanship/baseline.yaml
+  demon_hunter:
+    havoc: demon-hunter/havoc/baseline.yaml
 common:
   architecture: common/architecture.yaml
