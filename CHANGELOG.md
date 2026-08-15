@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-15 — Havoc Demon Hunter Midnight Season 2 APL rewrite
+
+### Provisional Season 2 theoretical branch added
+- SimulationCraft PR `#11740`, merged as `4b45fc2b` on 2026-08-14, wholesale rewrites the Havoc Midnight Season 2 APL: the old heavily conditional core is replaced by a compact priority list.
+- Removed SimC helper trees include old Fury forecasting, `use_blade_dance` target-count gating, broad Inertia consumer timing variables, `eb_aligned`, Burning Wound retarget heuristics, and several fine-grained filler/cooldown checks.
+- The new APL explicitly prioritizes pre-Metamorphosis Immolation Aura for Violent Transformation + A Fire Inside, Metamorphosis admission after pending Demonsurge checks, The Hunt gating around Eye Beam/Meta/Eternal Hunt/Reaver's Glaive state, Eye Beam as a direct high-priority action, Essence Break when Eye Beam remains >4s, and Death Sweep during Essence Break/Demonsurge windows.
+- Current Wowhead and Method public Havoc guides are still 12.0.7-era. Wowhead continues to emphasize keeping Blade Dance/Immolation Aura/Eye Beam on cooldown and pairing Essence Break and Vengeful Retreat with Eye Beam; Method likewise retains the older Fel-Scarred/Inertia practical framework.
+- Added `demon-hunter/havoc/baseline.yaml` as `PROVISIONAL`: use the new SimC branch for Season 2 theoretical benchmarking, but do not overwrite the practical production baseline until Season 2 live raid/M+ logs and updated theorycrafter guides validate the simplified ordering.
+
 ## 2026-08-15 — Marksmanship Hunter Unload / Precise Shots channel-end interaction
 
 ### Provisional machine-execution branch added
