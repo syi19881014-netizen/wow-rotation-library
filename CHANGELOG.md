@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-15 — Frost DK Season 2 tuning redistribution
+
+### Provisional tuning impact recorded; core rotation unchanged for now
+- SimulationCraft commit `fcb291e` (2026-08-15 UTC, labelled "Overrides for next weeks tuning") adds live hotfix overrides for Death Knight tuning expected with the next weekly reset.
+- Frost receives a net +9% baseline aura shift (`-12% -> -3%` in the SimC aura override), while the Season 2 Freezing Tempest package is cut in half: attack speed per stack `2% -> 1%`, and Icy Death Torrent bonus per stack `4% -> 2%`.
+- This is a material redistribution away from the S2 tier/IDT package and toward ordinary rotational abilities, but there is no accompanying Frost APL rewrite yet. Therefore the production priority remains unchanged.
+- Pre-tuning public 12.1 material describes the Frost S2 2pc as `2%` attack speed + `4%` IDT damage per Freezing Tempest stack and community/theorycraft feedback highlighted strong IDT/uptime and dual-wield sensitivity. The post-tuning split should reduce that dependence, but exact DW-vs-2H/build impacts remain `LIVE_VERIFY` until updated sims and Season 2 logs are available.
+- Updated `death-knight/frost/baseline.yaml`: do not invent a new GCD/hold rule solely to chase Freezing Tempest; re-sim weapon/build gaps and movement-sensitive stack value after the tuning lands.
+- The same SimC tuning commit also halves Blood Transfusion (`10% -> 5%`) and reduces Blood Visceral Strength (`10% -> 6%`). These are tracked as balance/build-pressure changes only; they do not yet justify rewriting Blood/Unholy production rotations.
+
 ## 2026-08-15 — Havoc Demon Hunter Midnight Season 2 APL rewrite
 
 ### Provisional Season 2 theoretical branch added
