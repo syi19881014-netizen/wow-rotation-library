@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-16 — Outlaw 12.1 WCL/API validation and runtime corrections
+
+### Current spell identities and Coup admission validated
+- Collected five high-ranked 12.1 PTR Mythic+ Outlaw reports through the official Warcraft Logs API v2. Browser scraping was not used; whole-dungeon data remains `LIVE_VERIFY` because travel, AoE and encounter downtime make it unsuitable as a direct Patchwerk target.
+- Confirmed current event spell IDs for Roll the Bones (`1214909`), Tricks of the Trade (`1224098`) and Coup de Grace (`441776`). Legacy Roll the Bones IDs remain runtime aliases only.
+- Removed the unsupported player-buff gate from Coup de Grace admission. Both current SimC APL behavior and the WCL event streams use Coup as a talent/hero-available, cooldown-ready finisher without a matching prerequisite player buff.
+- Added an isolated current MID1 two-piece branch: Blade Rush is admitted whenever ready and position-safe only when equipped-set detection or an explicit runtime setting confirms the bonus.
+- Recorded a comparable 300-second single-target diagnostic: about `80.4k` with no raid buffs or combat potion but with food, flask, augmentation rune, both weapon oils and a substituted item-level-272 boot; removing those non-potion consumables reduces the result to about `74.1k`.
+
 ## 2026-08-15 — Frost DK Season 2 tuning redistribution
 
 ### Provisional tuning impact recorded; core rotation unchanged for now

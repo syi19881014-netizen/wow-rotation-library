@@ -1,9 +1,10 @@
 spec: Outlaw Rogue
 version: 12.1-MID2
-updated: 2026-08-13
+updated: 2026-08-16
 status: STABLE
 source_notes:
   - "SimulationCraft: [Outlaw] Initial MID2 APL (#11689)"
+  - "Warcraft Logs official API v2: five high-ranked 12.1 PTR Mythic+ reports collected 2026-08-15"
 core_state_machine:
   OUTLAW_CD_STATE:
     order:
@@ -30,6 +31,58 @@ rules:
       - killing_spree
   adrenaline_rush:
     principle: "Avoid unnecessary delay; do not gate on obsolete finish-condition logic."
+  coup_de_grace:
+    status: STABLE
+    spell_id: 441776
+    admission:
+      - talent_or_trickster_available
+      - spell_known
+      - cooldown_ready
+    player_buff_gate: false
+    rationale: "Current SimC uses the action directly and five WCL event streams show repeated casts without a matching player-buff prerequisite."
+  roll_the_bones:
+    status: STABLE
+    current_spell_id: 1214909
+    legacy_runtime_aliases:
+      - 315508
+      - 193316
+  tricks_of_the_trade:
+    status: STABLE
+    current_spell_id: 1224098
+    execution_policy: "Utility branch only; never replace a damage GCD unless the platform reports it ready and a live tank target exists."
+set_branches:
+  MID1_2PC_GRIM_JEST:
+    status: STABLE
+    blade_rush_admission: always_when_ready_and_position_safe
+    isolation: "Enable only when equipped-set detection or an explicit runtime option confirms the bonus."
+live_evidence:
+  PTR_MYTHIC_PLUS_2026_08_15:
+    status: LIVE_VERIFY
+    scope: "Five high-ranked 12.1 PTR Mythic+ runs, two players, five dungeons, key levels 19-20."
+    casts_per_minute:
+      between_the_eyes: 9.83
+      adrenaline_rush: 1.62
+      killing_spree: 1.62
+      coup_de_grace: 2.44
+      dispatch: 9.46
+      blade_rush: 3.34
+    whole_dungeon_uptime_percent:
+      slice_and_dice: 97.76
+      between_the_eyes: 91.82
+      adrenaline_rush: 40.08
+    limitation: "Travel, downtime, AoE and encounter mechanics are included; do not use these numbers as pure single-target dummy thresholds."
+diagnostics:
+  PATCHWERK_300S_USER_GEAR:
+    status: LIVE_VERIFY
+    conditions: "No raid buffs or combat potion; includes food, flask, augmentation rune, both weapon oils, and a substituted item-level-272 boot for the missing export slot."
+    expected_dps: 80418
+    bare_non_potion_consumables_dps: 74094
+    expected_casts_per_minute:
+      between_the_eyes: 10.3
+      adrenaline_rush: 2.0
+      killing_spree: 2.0
+      coup_de_grace: 2.6
+      blade_rush: 5.0
 future:
   S2_4PC_FANG_STRIKE:
     status: FUTURE
