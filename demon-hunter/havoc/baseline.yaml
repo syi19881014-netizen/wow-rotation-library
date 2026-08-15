@@ -1,0 +1,62 @@
+spec: Havoc Demon Hunter
+version: "12.1 / Midnight Season 2"
+updated: 2026-08-15
+status: PROVISIONAL
+scope:
+  source_change: "SimulationCraft Season 2 APL rewrite"
+  season_start: 2026-08-18
+summary:
+  - "SimC PR #11740 replaced the prior highly conditional Havoc APL with a much shorter Season 2 priority list."
+  - "The rewrite materially changes cooldown admission and de-emphasizes several old heuristic variables for Inertia, Eye Beam alignment, Blade Dance thresholds, Fury forecasting, and Burning Wound retargeting."
+  - "Public practical guides are still 12.0.7-era and therefore cannot yet be treated as confirmation of the new Season 2 ordering."
+rules:
+  season2_simc_core:
+    status: PROVISIONAL
+    priority_notes:
+      - "Pre-Metamorphosis Immolation Aura is explicitly admitted for Violent Transformation + A Fire Inside when Metamorphosis is within ~3 GCDs."
+      - "Metamorphosis is admitted when Chaotic Transformation does not need to hold for Blade Dance/Eye Beam, and Demonsurge Death Sweep/Annihilation are not pending."
+      - "The Hunt is gated by Eternal Hunt / Eye Beam / Metamorphosis state and by Reaver's Glaive not being active."
+      - "Vengeful Retreat remains a timing tool around Eye Beam/Metamorphosis but the old broad Inertia-consumer heuristic tree was removed."
+      - "Reaver's Glaive is used when both Rending Strike and Glaive Flurry are down; subsequent Annihilation/Death Sweep consume hero-talent states."
+      - "Eye Beam is now an explicit high-priority rotational action rather than passing through the old eb_aligned variable tree."
+      - "Essence Break is admitted when Eye Beam remains >4s; Death Sweep is prioritized during Essence Break or Demonsurge windows."
+      - "Blade Dance / Death Sweep become broadly rotational again after higher hero/cooldown states instead of the old target-count use_blade_dance heuristic."
+      - "A Fire Inside + Burning Wound Immolation Aura charge-capping prevention is retained in simplified form."
+  practical_current:
+    status: STABLE_PRACTICAL_12_0_7
+    notes:
+      - "Wowhead still describes Havoc around keeping Blade Dance, Immolation Aura, and Eye Beam on cooldown, aligning Essence Break to every second Eye Beam, and pairing Vengeful Retreat with Eye Beam for Inertia/Initiative."
+      - "Method's current public guide is also still 12.0.7 and emphasizes Fel-Scarred burst, Death Sweep, Eye Beam, Metamorphosis and Inertia handling."
+      - "Until 12.1 Season 2 raid/M+ logs and updated class-guide/theorycrafter evidence appear, do not replace the current practical production branch wholesale with the new SimC APL."
+automation:
+  architecture:
+    - "Separate hero-tree state (Fel-Scarred vs Aldrachi Reaver) from cooldown admission."
+    - "Evaluate pending Demonsurge actions before Metamorphosis admission."
+    - "Track Eye Beam remaining, Metamorphosis remaining/ready, Blade Dance cooldown, Essence Break debuff, Reaver's Glaive/Rending Strike/Glaive Flurry, Inertia/Initiative, Immolation Aura charges, Fury, and target count."
+    - "Do not preserve deleted SimC helper variables as hard production rules unless live evidence independently supports them."
+  recommended_policy:
+    simc_branch: "Use Season 2 SimC ordering for theoretical benchmark simulations."
+    production_branch: "Keep existing practical 12.0.7-style alignment until Season 2 live evidence validates the rewrite."
+    migration: "Promote individual Season 2 rules to STABLE only after guide/log/theorycrafter confirmation; preserve conflicts explicitly."
+evidence:
+  simc:
+    pr: 11740
+    merge_commit: 4b45fc2bca9bc180a0108e496bc09ced45fd7a6a
+    merged: 2026-08-14
+    title: "[DH] Havoc Midnight Season 2 APL"
+    materiality: "Wholesale APL rewrite: old ~100-line conditional core replaced with a compact priority list."
+  wowhead:
+    checked: 2026-08-15
+    guide_state: "Public Havoc rotation page still identifies Patch 12.0.7; core guidance keeps Blade Dance/Immolation Aura/Eye Beam on cooldown and aligns Essence Break/Vengeful Retreat with Eye Beam."
+  method:
+    checked: 2026-08-15
+    guide_state: "Public guide still Patch 12.0.7 (last updated 2026-06-16)."
+confidence:
+  simc_theoretical_branch: HIGH
+  season2_live_practical_branch: LIVE_VERIFY
+  current_practical_branch: MEDIUM_HIGH
+live_verify:
+  - "Season 2 begins 2026-08-18; inspect first high-end raid/M+ logs for Eye Beam -> Essence Break -> Death Sweep cadence and Metamorphosis admission."
+  - "Check whether top players continue explicit Vengeful Retreat/Inertia pairing every Eye Beam or adopt the looser SimC timing."
+  - "Validate Aldrachi Reaver Rending Strike/Glaive Flurry consumption order by target count."
+  - "Validate whether deleted Burning Wound retargeting and target-count Blade Dance heuristics are truly obsolete or merely unnecessary for the new profile."
