@@ -50,6 +50,20 @@ rules:
     status: STABLE
     current_spell_id: 1224098
     execution_policy: "Utility branch only; never replace a damage GCD unless the platform reports it ready and a live tank target exists."
+  smart_burst:
+    status: LIVE_VERIFY
+    boss: immediate
+    large_pull:
+      minimum_enemies: 4
+      admission: immediate
+    small_pull:
+      minimum_estimated_ttd_seconds: 20
+    observed_adrenaline_rush_interval_seconds:
+      p25: 31.04
+      median: 34.77
+      p75: 43.53
+    rationale: "At a transparent 2.5-second core-cast gap, inferred AR windows have a 22.96s lower quartile while no-AR windows have a 22.25s upper quartile; use 20s as a conservative configurable overlap boundary."
+    limitation: "Chained-pull boundaries are inferred rather than supplied by WCL and change with the idle-gap definition; never promote this threshold above LIVE_VERIFY without broader samples."
 set_branches:
   MID1_2PC_GRIM_JEST:
     status: STABLE
@@ -66,6 +80,10 @@ live_evidence:
       coup_de_grace: 2.44
       dispatch: 9.46
       blade_rush: 3.34
+    dungeon_completion_minutes:
+      minimum: 24.82
+      median: 28.05
+      maximum: 30.81
     whole_dungeon_uptime_percent:
       slice_and_dice: 97.76
       between_the_eyes: 91.82
