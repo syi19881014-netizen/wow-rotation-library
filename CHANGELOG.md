@@ -3,13 +3,13 @@
 ## 2026-08-16 — Outlaw 12.1 WCL/API validation and runtime corrections
 
 ### Current spell identities and Coup admission validated
-- Collected five high-ranked 12.1 PTR Mythic+ Outlaw reports through the official Warcraft Logs API v2. Browser scraping was not used; whole-dungeon data remains `LIVE_VERIFY` because travel, AoE and encounter downtime make it unsuitable as a direct Patchwerk target.
+- Collected eight high-ranked 12.1 PTR Mythic+ Outlaw reports across eight dungeons through the official Warcraft Logs API v2. Browser scraping was not used; whole-dungeon data remains `LIVE_VERIFY` because travel, AoE and encounter downtime make it unsuitable as a direct Patchwerk target.
 - Confirmed current event spell IDs for Roll the Bones (`1214909`), Tricks of the Trade (`1224098`) and Coup de Grace (`441776`). Legacy Roll the Bones IDs remain runtime aliases only.
 - Removed the unsupported player-buff gate from Coup de Grace admission. Both current SimC APL behavior and the WCL event streams use Coup as a talent/hero-available, cooldown-ready finisher without a matching prerequisite player buff.
 - Added an isolated current MID1 two-piece branch: Blade Rush is admitted whenever ready and position-safe only when equipped-set detection or an explicit runtime setting confirms the bonus.
 - Recorded a comparable 300-second single-target diagnostic: about `80.4k` with no raid buffs or combat potion but with food, flask, augmentation rune, both weapon oils and a substituted item-level-272 boot; removing those non-potion consumables reduces the result to about `74.1k`.
-- Added a `LIVE_VERIFY` smart-burst branch from the same five WCL runs. Their dungeon completion median is `28.05m`, and 221 adjacent Adrenaline Rush intervals have a `34.77s` median (`31.04–43.53s` interquartile range), showing little support for long generic holds.
-- Cast-gap pull inference is explicitly treated as uncertain: at a 2.5s boundary, AR windows have a `33.68s` median and `22.96s` lower quartile, versus `14.91s` median and `22.25s` upper quartile without AR. The runtime small-pull TTD default is therefore raised from `15s` to a configurable `20s`, while bosses and 4+ targets remain immediate; adding a target within the same pack no longer resets the decision.
+- Added a `LIVE_VERIFY` smart-burst branch from the same eight WCL runs. Their dungeon completion median is `29.17m`, and 352 adjacent Adrenaline Rush intervals have a `34.79s` median (`30.79–44.21s` interquartile range), showing little support for long generic holds.
+- Cast-gap pull inference is explicitly treated as uncertain: at a 2.5s boundary, AR windows have a `35.51s` median and `22.78s` lower quartile, versus `14.95s` median and `23.28s` upper quartile without AR. The runtime small-pull TTD default is therefore raised from `15s` to a configurable `20s`, while bosses and 4+ targets remain immediate; adding a target within the same pack no longer resets the decision.
 
 ## 2026-08-15 — Frost DK Season 2 tuning redistribution
 

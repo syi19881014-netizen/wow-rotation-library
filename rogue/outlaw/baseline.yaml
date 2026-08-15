@@ -4,7 +4,7 @@ updated: 2026-08-16
 status: STABLE
 source_notes:
   - "SimulationCraft: [Outlaw] Initial MID2 APL (#11689)"
-  - "Warcraft Logs official API v2: five high-ranked 12.1 PTR Mythic+ reports collected 2026-08-15"
+  - "Warcraft Logs official API v2: eight high-ranked 12.1 PTR Mythic+ reports collected 2026-08-15/16"
 core_state_machine:
   OUTLAW_CD_STATE:
     order:
@@ -39,7 +39,7 @@ rules:
       - spell_known
       - cooldown_ready
     player_buff_gate: false
-    rationale: "Current SimC uses the action directly and five WCL event streams show repeated casts without a matching player-buff prerequisite."
+    rationale: "Current SimC uses the action directly and eight WCL event streams show repeated casts without a matching player-buff prerequisite."
   roll_the_bones:
     status: STABLE
     current_spell_id: 1214909
@@ -59,10 +59,10 @@ rules:
     small_pull:
       minimum_estimated_ttd_seconds: 20
     observed_adrenaline_rush_interval_seconds:
-      p25: 31.04
-      median: 34.77
-      p75: 43.53
-    rationale: "At a transparent 2.5-second core-cast gap, inferred AR windows have a 22.96s lower quartile while no-AR windows have a 22.25s upper quartile; use 20s as a conservative configurable overlap boundary."
+      p25: 30.79
+      median: 34.79
+      p75: 44.21
+    rationale: "At a transparent 2.5-second core-cast gap, inferred AR windows have a 22.78s lower quartile while no-AR windows have a 23.28s upper quartile; use 20s as a conservative configurable overlap boundary."
     limitation: "Chained-pull boundaries are inferred rather than supplied by WCL and change with the idle-gap definition; never promote this threshold above LIVE_VERIFY without broader samples."
 set_branches:
   MID1_2PC_GRIM_JEST:
@@ -72,22 +72,22 @@ set_branches:
 live_evidence:
   PTR_MYTHIC_PLUS_2026_08_15:
     status: LIVE_VERIFY
-    scope: "Five high-ranked 12.1 PTR Mythic+ runs, two players, five dungeons, key levels 19-20."
+    scope: "Eight high-ranked 12.1 PTR Mythic+ runs, two players, eight dungeons, key levels 19-20."
     casts_per_minute:
-      between_the_eyes: 9.83
-      adrenaline_rush: 1.62
-      killing_spree: 1.62
-      coup_de_grace: 2.44
-      dispatch: 9.46
-      blade_rush: 3.34
+      between_the_eyes: 9.69
+      adrenaline_rush: 1.58
+      killing_spree: 1.59
+      coup_de_grace: 2.38
+      dispatch: 9.52
+      blade_rush: 3.26
     dungeon_completion_minutes:
       minimum: 24.82
-      median: 28.05
-      maximum: 30.81
+      median: 29.17
+      maximum: 31.38
     whole_dungeon_uptime_percent:
-      slice_and_dice: 97.76
-      between_the_eyes: 91.82
-      adrenaline_rush: 40.08
+      slice_and_dice: 97.68
+      between_the_eyes: 90.54
+      adrenaline_rush: 39.18
     limitation: "Travel, downtime, AoE and encounter mechanics are included; do not use these numbers as pure single-target dummy thresholds."
 diagnostics:
   PATCHWERK_300S_USER_GEAR:
