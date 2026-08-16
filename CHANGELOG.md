@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-17 — Marksmanship 2T / DungeonRoute branch refinement
+
+### Season 2 APL adds context-sensitive spender and routing rules
+- SimulationCraft commit `2d51405` (2026-08-16 UTC) materially separates exactly-2-target total-damage play from DungeonRoute priority-target play. With Aspect of the Hydra, Precise Shots now prefers Multi-Shot on 2 targets outside a DungeonRoute priority-damage context, while exactly-2-target DungeonRoute priority damage retains Arcane Shot; 3+ targets reopen Multi-Shot.
+- The same commit suppresses Season 2 4pc Explosive Shot target-cycling/multidotting when DungeonRoute `max_prio_damage` is active, preventing aggregate cleave optimization from stealing damage/GCD value from the intended priority target.
+- SimulationCraft commit `bf3ef44` corrects the previously promoted Rapid Fire clipping rule: `ticks_remain < 2` clipping is legal only when `talent.unload` is selected. Without Unload, Rapid Fire remains full-channel by default.
+- SimulationCraft commit `ecf37b9` adds an AoE Multi-Shot Focus dump before Steady Shot when `focus > multishot_cost + aimed_shot_cost` under the priority-damage branch, explicitly preserving the next Aimed Shot's Focus reserve while reducing overcap risk.
+- Current public Wowhead guidance already describes Multi-Shot as the general Precise Shots spender on 2+ targets, but does not yet document the DungeonRoute priority exception or final-boundary clipping; Method remains 12.0.7-era. Season 2 live raid/M+ logs are not yet available to validate these new route-specific branches.
+- Updated `hunter/marksmanship/baseline.yaml`; the Unload talent check is now a hard cast-admission requirement, and 2T raid vs M+ priority routing is represented as an explicit state-machine branch.
+
 ## 2026-08-16 — Balance Druid AoE / DungeonRoute APL correction
 
 ### Provisional Season 2 AoE execution branch added
