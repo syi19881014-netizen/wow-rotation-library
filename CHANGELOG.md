@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-16 — Balance Druid AoE / DungeonRoute APL correction
+
+### Provisional Season 2 AoE execution branch added
+- SimulationCraft commit `f172b7e` (2026-08-16 UTC), mirrored directly from Dreamgrove commit `955fc4a`, materially changes Balance AoE execution rather than formatting only.
+- DungeonRoute Eclipse admission now waits until the current Eclipse has <2s remaining before the normal timing branch can trigger, reducing premature Eclipse transitions during active pack windows.
+- Generic major-cooldown admission now requires `target.time_to_die > 20s`; this affects CA/Incarnation and aligned minor-CD windows and is intended to stop full cooldown packages from being dumped into packs/targets that will die too quickly.
+- Moonfire multi-dotting is now explicit on 2+ targets: refreshable targets are selected only when effective remaining life exceeds ~6s and active Moonfires remain below 10; single-target Elune's Chosen Moonfire upkeep is separated with a longer line cooldown.
+- Starfall now retains the `target_ttd > 5s` gate even when admitted by Starweaver's Warp / Touch the Cosmos, and the opener can choose Starfall rather than forcing Starsurge on 2+ targets when the AoE spender conditions are met.
+- Public Wowhead and Method Balance guides are still 12.0.7-era, so these exact 12.1 thresholds remain `PROVISIONAL / LIVE_VERIFY`; Dreamgrove + SimC agreement is strong theorycraft evidence but Season 2 live WCL should still validate practical pack/TTD behavior.
+- Added `druid/balance/baseline.yaml` and indexed it. Runtime TTD thresholds must stay configurable and encounter-overridable rather than treated as perfect truth.
+
 ## 2026-08-16 — Subtlety Deepening Shadows dynamic duration behavior
 
 ### Runtime state tracking changed; core priority remains unchanged
