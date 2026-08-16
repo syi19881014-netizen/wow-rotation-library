@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-16 — Subtlety Deepening Shadows dynamic duration behavior
+
+### Runtime state tracking changed; core priority remains unchanged
+- SimulationCraft commit `85cb849` (2026-08-15 UTC) updates Subtlety's Deepening Shadows behavior from a cast-time-only assumption: current testing indicates that if haste increases while Shadow Dance is already active, the existing Dance can be extended when the newly calculated hasted duration is greater than its original trigger duration.
+- The modeled behavior does not shorten an already active Shadow Dance when haste falls; it only extends on a qualifying higher-duration recalculation.
+- This is a material automation/state-model change even though the APL priority itself was not rewritten: runtime code must not freeze Shadow Dance expiry using only the haste value present at cast time. Prefer live buff-remains reads each tick, or refresh expected expiry when haste changes.
+- Current Wowhead practical guidance still treats Deepening Shadows as highly timing-sensitive, including one-second update behavior and macro/timing tricks to avoid losing the final Dance GCD. The new SimC implementation suggests later haste gains can extend an active Dance, but it does not yet prove those practical methods are obsolete in every trinket/haste case.
+- Updated `rogue/subtlety/baseline.yaml` as `PROVISIONAL / LIVE_VERIFY` for the dynamic-duration semantics; no deliberate hold/proc-fishing rule is added without live-log/theorycrafter evidence.
+
 ## 2026-08-16 — Marksmanship Rapid Fire clipping promoted into SimC APL
 
 ### Theoretical branch strengthened; practical production still LIVE_VERIFY
