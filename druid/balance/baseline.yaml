@@ -1,0 +1,84 @@
+spec: balance_druid
+wow_version: "12.1 / Midnight"
+status: PROVISIONAL
+updated: 2026-08-16
+
+scope:
+  focus: "Season 2 AoE / Mythic+ execution and opener"
+  source_of_truth_role: "theoretical + theorycrafter APL branch; practical live validation pending"
+
+evidence:
+  simulationcraft:
+    repo: simulationcraft/simc
+    commit: f172b7e7bc5971c31c9a2ee17ca6dd81eb3f591f
+    date_utc: 2026-08-16
+    message: "[Balance] fix AoE"
+  theorycrafter:
+    repo: dreamgrove/Dreamgrove
+    commit: 955fc4a025a11fd30178bcd965e29ec396896911
+    message: "[Balance] fix AoE"
+  public_guides:
+    wowhead:
+      status: "12.0.7 public guide; useful practical baseline but not yet synchronized to this 12.1 APL change"
+    method:
+      status: "12.0.7 public guide; not yet synchronized to this 12.1 APL change"
+
+state_machine:
+  PACK_PREP:
+    moonfire_multidot:
+      status: PROVISIONAL
+      condition: "targets > 1 AND moonfire refreshable AND (target_ttd - dot_remains) > 6 AND active_moonfire_dots < 10"
+      action: "Moonfire target_if"
+      rationale: "DoT only targets expected to live long enough; cap spread at ten active Moonfires."
+    sunfire:
+      condition: "sunfire_remains < 15"
+      action: "Sunfire"
+
+  ECLIPSE_ADMISSION:
+    dungeon_route:
+      status: PROVISIONAL
+      rule: "Do not trigger the normal eclipse timing branch until current Eclipse remains < 2s."
+      automation_note: "Dungeon-route logic must read live Eclipse remains; avoid re-enter/transition logic too early during an active Eclipse."
+    non_dungeon:
+      rule: "Use existing cooldown-alignment eclipse timing logic."
+
+  MAJOR_CD_ADMISSION:
+    status: PROVISIONAL
+    rule: "Generic major-CD admission requires target_ttd > 20s."
+    affected_windows:
+      - Celestial Alignment / Incarnation
+      - Force of Nature alignment
+      - Fury of Elune alignment
+    automation_note: "Do not spend full major window into a target expected to die inside ~20s unless an encounter-specific/fight-end branch overrides."
+
+  AOE_SPENDER:
+    starfall:
+      status: PROVISIONAL
+      target_gate: "spell_targets >= 2"
+      life_gate: "target_ttd > 5s"
+      proc_gate: "Starweaver's Warp OR Touch the Cosmos can admit Starfall, but the >5s TTD gate still applies."
+    starsurge:
+      note: "Retain for Starfall-talent / proc-state branches where APL conditions admit it; do not flatten AoE to unconditional Starfall."
+
+  OPENER:
+    status: PROVISIONAL
+    rules:
+      - "Spread refreshable Moonfire to viable multi-targets before full cooldown flow when targets >1 and effective remaining life >6s."
+      - "Apply Sunfire."
+      - "During Ascendant Stars and no Convoke, choose Starsurge on single target or where Starfall branch is not admitted."
+      - "On 2+ targets, allow Starfall in the opener when its cost/proc conditions are satisfied instead of forcing Starsurge."
+
+practical_split:
+  simc_theoretical:
+    recommendation: "Use the new AoE APL rules for Season 2 benchmark simulations and machine-condition design."
+  high_end_practical:
+    recommendation: "Adopt the multi-DoT life gates and CD TTD awareness first; keep encounter-aware judgment for forced movement, priority targets and pull chaining until 12.1 live logs mature."
+  ordinary_player:
+    recommendation: "Simplify to: DoT targets that will live, enter/refresh Eclipse cleanly, avoid wasting major CDs on dying packs, spend Starfall on sustained 2+ target AoE."
+  special_environment:
+    recommendation: "Encounter overrides may break the generic >20s major-CD rule for fight-end, priority burn, forced downtime, or known next-pull routing."
+
+risk_notes:
+  - "Public Wowhead/Method practical guides are still 12.0.7-era, so exact 12.1 live behavior is not fully cross-validated by published guides yet."
+  - "Do not hard-code TTD as perfect truth; runtime should treat it as configurable/heuristic and allow boss/encounter overrides."
+  - "Do not generalize this update to single-target core rotation; the material change is primarily AoE / DungeonRoute / opener admission."
