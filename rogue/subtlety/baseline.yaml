@@ -1,9 +1,10 @@
 spec: Subtlety Rogue
 version: 12.1
-updated: 2026-08-13
+updated: 2026-08-16
 status: STABLE
 source_notes:
   - "SimulationCraft: [Subtlety] 12.1 Update (#11704)"
+  - "SimulationCraft commit 85cb849 (2026-08-15 UTC): Update Deepening Shadows Behavior"
 shadow_dance:
   Deathstalker:
     energy_floor_approx: 30
@@ -18,6 +19,20 @@ shadow_dance:
     combo_points: "prefer high CP entry, approximately 6+"
     require_secret_technique_ready: true
     evaluate_shadow_blades_timing: true
+  deepening_shadows_dynamic_duration:
+    status: PROVISIONAL
+    evidence: "Current testing represented by SimC commit 85cb849 indicates haste increases while Shadow Dance is already active can extend the existing Dance if the newly calculated hasted duration exceeds the original trigger duration. Haste loss does not shorten an already active Dance in the modeled behavior."
+    runtime_requirement:
+      - "Do not freeze Shadow Dance expiry from the haste value seen only at cast time."
+      - "Prefer reading the live Shadow Dance buff remaining time each tick; if the platform cannot, recompute/refresh expected expiry whenever haste changes."
+      - "Treat a mid-Dance haste gain as a possible extension event, not as a new Dance."
+    production_effect:
+      priority_rewrite: false
+      state_tracking_change: true
+      note: "No evidence yet supports deliberately holding Dance or forcing a haste proc solely to exploit this extension. Keep existing Dance/Secret Technique priority and update only duration/admission tracking until live logs/theorycraft validate an active manipulation strategy."
+    practical_conflict:
+      - "Current Wowhead practical guidance still describes Deepening Shadows as timing-sensitive, including one-second update behavior and macro/timing methods to avoid losing the final Dance GCD."
+      - "The new SimC behavior means later haste gains may rescue/extend an active Dance, but it does not prove the old practical macro/timing advice is obsolete in every haste/trinket case."
 goremaws_bite:
   role: "Dance/Ancient Arts window tool, not generic builder"
   state: GOREMAW_WINDOW
@@ -39,3 +54,4 @@ prepull:
     isolated_from_combat_rotation: true
 live_verify:
   coup_de_grace_gcd_bug: "~1.2s observed behavior; do not freeze as permanent design"
+  deepening_shadows_mid_dance_extension: "Verify on live 12.1 with haste proc gain/loss during an already active Shadow Dance and measure exact refresh cadence/rounding before promoting to STABLE runtime semantics."
