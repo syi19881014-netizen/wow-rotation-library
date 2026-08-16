@@ -1,60 +1,107 @@
 spec: Marksmanship Hunter
 version: 12.1
-updated: 2026-08-16
+updated: 2026-08-17
 status: PROVISIONAL
 scope:
-  talent: Unload
-  mechanic: Rapid Fire channel-end / Precise Shots consumption
+  hero_talents:
+    - Dark Ranger
+    - Sentinel
+  mechanics:
+    - Rapid Fire channel-end / Precise Shots consumption
+    - 2-target Precise Shots spender selection
+    - Explosive Shot priority-target routing
+    - AoE Focus dumping
 rules:
   unload_precise_shots_channel_end:
     behavior: "The second Unload shot fired at Rapid Fire channel end consumes Precise Shots on a slight delay on live behavior as modeled by SimC bugs mode."
     theoretical_optimization:
-      action: "Interrupt Rapid Fire at the final channel boundary when fewer than 2 ticks remain, Precise Shots is active, and the GCD is available, then immediately spend Precise Shots so both the second Unload shot and the spender can benefit."
+      action: "Only with Unload talented, interrupt Rapid Fire at the final channel boundary when fewer than 2 ticks remain, Precise Shots is active, and the GCD is available, then immediately spend Precise Shots so both the second Unload shot and the spender can benefit."
       status: PROVISIONAL
-      rationale: "SimulationCraft first modeled the delayed consumption in commit 94f7e089, then adopted the optimization directly into the Marksmanship APL in commit 6cad471 with interrupt_if=ticks_remain<2&buff.precise_shots.up&!gcd.remains, interrupt_immediate=1, interrupt_global=1 across Dark Ranger and Sentinel ST/AoE lists."
+      rationale: "SimulationCraft first modeled the delayed consumption, then adopted clipping into the Marksmanship APL, and on 2026-08-16 corrected the rule so clipping is legal only when talent.unload is selected."
     practical_baseline:
-      action: "Complete Rapid Fire normally, then spend Precise Shots with Arcane Shot on single target or Multi-Shot where appropriate."
+      action: "Complete Rapid Fire normally, then spend Precise Shots with the appropriate spender."
       status: STABLE_PRACTICAL
-      rationale: "Current public Wowhead and Method practical guides still describe the normal full-channel flow and do not document deliberate final-tick Rapid Fire clipping."
+      rationale: "Current public practical guides still describe the normal full-channel flow and do not document deliberate final-boundary Rapid Fire clipping."
     automation:
-      cast_policy: "CAN_CLIP_IF(ticks_remain < 2 AND precise_shots_up AND gcd_ready AND valid_precise_shots_spender AND no_higher_priority_interrupt_risk)"
-      state_inputs:
-        - unload_talented
-        - rapid_fire_channeling
-        - rapid_fire_ticks_remain
-        - gcd_remaining
-        - precise_shots_stacks
-        - target_count
-        - trick_shots_state
-        - hero_tree
-        - arcane_shot_usable
-        - multi_shot_usable
-        - black_arrow_or_kill_shot_spender_state
-        - latency_or_execution_margin
+      cast_policy: "CAN_CLIP_IF(unload_talented AND ticks_remain < 2 AND precise_shots_up AND gcd_ready AND valid_precise_shots_spender AND no_higher_priority_interrupt_risk)"
       safeguards:
-        - "Do not clip earlier than the final channel boundary; SimC's production APL condition is specifically ticks_remain<2 with GCD ready."
-        - "Do not treat the optimization as a generic Precise Shots interrupt rule outside Rapid Fire."
-        - "Exact player-facing timing remains LIVE_VERIFY because public practical guides have not yet adopted the clipping behavior."
+        - "Without Unload talented, Rapid Fire is MUST_COMPLETE unless a separate encounter/survival override applies."
+        - "Do not clip earlier than the final channel boundary."
+        - "Do not treat Precise Shots as a generic Rapid Fire interrupt condition."
         - "Disable this optimization if Blizzard fixes the delayed-consumption interaction."
+
+  precise_shots_two_target_split:
+    status: PROVISIONAL
+    condition: "Aspect of the Hydra talented and active_enemies >= 2"
+    raid_or_non_priority_context:
+      action: "Prefer Multi-Shot over Arcane Shot as the Precise Shots spender on exactly 2 targets when not in a DungeonRoute priority-target context."
+      rationale: "SimC commit 2d51405 explicitly changes 2-target raid/non-DungeonRoute behavior to Multi-Shot to maximize total 2-target damage."
+    dungeonroute_priority_target_context:
+      action: "On exactly 2 targets, prefer Arcane Shot for Precise Shots when DungeonRoute priority damage is active; Multi-Shot becomes allowed again at 3+ targets."
+      rationale: "The new APL preserves M+ priority-target efficiency rather than blindly maximizing 2-target aggregate damage."
+    automation:
+      branch_inputs:
+        - active_enemies
+        - fight_style_dungeonroute
+        - max_prio_damage
+        - aspect_of_the_hydra_talented
+        - precise_shots_up
+      policy: "if active_enemies == 2 AND dungeonroute AND max_prio_damage => Arcane Shot; otherwise on 2+ eligible targets => Multi-Shot"
+
+  explosive_shot_priority_routing:
+    status: PROVISIONAL
+    season2_4pc_multidot:
+      action: "Allow Explosive Shot target-cycling/multidotting with the Season 2 4pc only when not in a DungeonRoute max-priority-damage context."
+      priority_target_exception: "In DungeonRoute priority-target situations, do not cycle Explosive Shot across secondary targets solely for the 4pc; keep the normal priority-target Explosive Shot action instead."
+      rationale: "SimC commit 2d51405 removes Explosive Shot multidotting in priority-target DungeonRoute situations."
+    automation:
+      gate: "mid2_4pc AND active_enemies > 1 AND (NOT max_prio_damage OR NOT dungeonroute) AND tactical_reload_lock_and_load_gate"
+
+  aoe_focus_dump:
+    status: PROVISIONAL
+    action: "In Dark Ranger/Sentinel AoE lists, use Multi-Shot as a Focus dump before Steady Shot when enough Focus remains to pay Multi-Shot and still reserve the cost of an Aimed Shot, under the max-priority-damage branch."
+    admission: "focus > multishot_cost + aimed_shot_cost AND max_prio_damage"
+    purpose: "Avoid unnecessary Focus overcap while preserving the next Aimed Shot."
+    automation:
+      state_inputs:
+        - focus
+        - multishot_cost
+        - aimed_shot_cost
+        - max_prio_damage
+      policy: "dump only above the reserve threshold; never spend the Aimed Shot reserve"
+
 evidence:
   simc:
     mechanic_commit: 94f7e089da69c54b46d40a7a553e81f15334d4c7
-    apl_commit: 6cad47161bcb93bbe2af1125d5d753483982143c
-    apl_date: 2026-08-15
-    summary: "The Marksmanship APL now actively interrupts Rapid Fire when ticks_remain<2, Precise Shots is up, and the GCD is free, in Dark Ranger and Sentinel single-target/AoE branches."
+    clipping_apl_commit: 6cad47161bcb93bbe2af1125d5d753483982143c
+    two_target_and_explosive_commit: 2d5140581e40461370d2a47070b838b5c756dc7a
+    unload_gate_correction_commit: bf3ef4410b6adf75fb77d05d8827205cc85e9656
+    aoe_focus_dump_commit: ecf37b9f753023234ba9c29e5986d4814b5eeaf9
+    latest_date: 2026-08-16
+    summary: "Latest MM APL now distinguishes raid-style 2T cleave from DungeonRoute priority damage, suppresses S2 4pc Explosive Shot multidotting in priority-target DungeonRoute contexts, restricts Rapid Fire clipping to Unload builds, and adds an AoE Multi-Shot Focus-dump reserve rule."
   practical:
     wowhead:
-      summary: "Current Marksmanship guide says Precise Shots should be spent after Aimed Shot/Rapid Fire and still lists Rapid Fire as a normal cooldown/channel; it does not document deliberate final-boundary clipping."
+      summary: "Current public Marksmanship guidance already treats Multi-Shot as the Precise Shots spender on 2+ targets in general rotation language, while the detailed priority-target/DungeonRoute exceptions and final-boundary clipping are not yet documented."
     method:
-      summary: "Current Marksmanship guide prioritizes keeping Rapid Fire/Aimed Shot rolling and preventing Precise Shots overcap; it does not document deliberate final-boundary clipping."
+      summary: "Current Method guide remains 12.0.7-era and does not document these Season 2 DungeonRoute-specific refinements."
   official:
-    summary: "Blizzard documents Unload's extra shot at Rapid Fire start/end but does not document the delayed Precise Shots consumption interaction."
+    summary: "Blizzard documents Unload and the Season 2 Explosive Shot redesign, but does not publish these APL routing rules as player-facing rotation instructions."
 confidence:
-  mechanic_exists_in_simc_live_bug_model: HIGH
-  simc_theoretical_value: HIGH
-  practical_gain_and_exact_timing: LIVE_VERIFY
-  production_default: PRACTICAL_BASELINE
+  simc_theoretical_branch: HIGH
+  two_target_raid_vs_dungeonroute_split: HIGH_SIMC_PROVISIONAL_PRACTICAL
+  unload_clip_requires_unload: HIGH
+  aoe_focus_reserve_rule: HIGH_SIMC_PROVISIONAL_PRACTICAL
+  live_log_validation: PENDING_SEASON2
+production_recommendation:
+  stable_practical:
+    - "Do not clip Rapid Fire without Unload."
+    - "Preserve Aimed Shot Focus reserve before low-priority AoE dumps."
+  provisional_machine_logic:
+    - "Use explicit raid-vs-DungeonRoute priority branches for exactly 2 targets."
+    - "Suppress Explosive Shot multidot cycling in DungeonRoute priority-target mode."
+    - "Enable final-boundary Rapid Fire clipping only for Unload builds after latency-safe live validation."
 live_verify:
-  - "Confirm the exact safe interrupt/queue window under real latency and whether the final intended Rapid Fire/Unload events are always preserved."
-  - "Check Season 2 top raid/M+ logs and hunter theorycrafter updates for repeatable use of Arcane Shot/Multi-Shot/other valid spender at the Rapid Fire boundary."
-  - "Promote to production only after live evidence shows consistent gain without lost ticks or rotational desync."
+  - "Season 2 raid and M+ do not open until the weekly reset window, so current high-end WCL cannot yet validate these new S2 branches."
+  - "After live data is available, compare 2T Arcane-vs-Multi usage in raid cleave versus M+ priority-target pulls."
+  - "Validate AoE Focus-dump frequency and whether the reserve rule ever delays Aimed Shot under realistic movement/latency."
+  - "Validate Rapid Fire clip safety only in Unload builds and confirm no lost final tick/Unload event."
