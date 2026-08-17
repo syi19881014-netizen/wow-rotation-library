@@ -1,6 +1,6 @@
 spec: Marksmanship Hunter
 version: 12.1
-updated: 2026-08-17
+updated: 2026-08-18
 status: PROVISIONAL
 scope:
   hero_talents:
@@ -11,6 +11,8 @@ scope:
     - 2-target Precise Shots spender selection
     - Explosive Shot priority-target routing
     - AoE Focus dumping
+    - Trueshot / Explosive Shot cooldown alignment
+    - 2-target Rapid Fire target routing
 rules:
   unload_precise_shots_channel_end:
     behavior: "The second Unload shot fired at Rapid Fire channel end consumes Precise Shots on a slight delay on live behavior as modeled by SimC bugs mode."
@@ -70,6 +72,23 @@ rules:
         - max_prio_damage
       policy: "dump only above the reserve threshold; never spend the Aimed Shot reserve"
 
+  trueshot_explosive_shot_alignment:
+    status: PROVISIONAL
+    action: "Outside opener/end-of-fight overrides, delay Trueshot by up to roughly 15 seconds when Explosive Shot will become available within that window, so the two can be aligned."
+    simc_condition: "Trueshot ready remains false unless Explosive Shot is ready or its cooldown remains is at least 15 seconds; fight-remains and early-fight overrides still bypass the hold."
+    practical_conflict: "Current public Wowhead guidance still generally recommends activating Trueshot when it naturally lines up before Aimed Shot / after Rapid Fire, and does not yet document a 15-second Explosive Shot hold."
+    automation:
+      admission: "allow_trueshot_if(explosive_shot_ready OR explosive_shot_cd >= 15s OR opener_override OR execute/fight_end_override OR non_bullseye_build)"
+      safeguard: "Do not convert this into a universal 15-second hard hold; DungeonRoute pull timing, imminent downtime, and fight-end logic must override."
+
+  rapid_fire_two_target_targeting:
+    status: PROVISIONAL
+    action: "On pure non-DungeonRoute 2-target encounters, Rapid Fire may target-swap to the target without Sentinel's Mark to improve aggregate damage; do not use this routing in DungeonRoute priority-damage contexts."
+    rationale: "SimC commit 7ba3610 adds a target_if Rapid Fire line only when !fight_style.dungeonroute and explicitly notes priority-damage loss in DungeonRoute."
+    automation:
+      gate: "active_enemies == 2 AND NOT dungeonroute AND aggregate_damage_objective"
+      target_policy: "prefer target with Sentinel's Mark down when the pure-2T aggregate branch is active; otherwise keep priority-target routing"
+
 evidence:
   simc:
     mechanic_commit: 94f7e089da69c54b46d40a7a553e81f15334d4c7
@@ -77,31 +96,38 @@ evidence:
     two_target_and_explosive_commit: 2d5140581e40461370d2a47070b838b5c756dc7a
     unload_gate_correction_commit: bf3ef4410b6adf75fb77d05d8827205cc85e9656
     aoe_focus_dump_commit: ecf37b9f753023234ba9c29e5986d4814b5eeaf9
-    latest_date: 2026-08-16
-    summary: "Latest MM APL now distinguishes raid-style 2T cleave from DungeonRoute priority damage, suppresses S2 4pc Explosive Shot multidotting in priority-target DungeonRoute contexts, restricts Rapid Fire clipping to Unload builds, and adds an AoE Multi-Shot Focus-dump reserve rule."
+    trueshot_and_rapid_fire_routing_commit: 7ba36108b440c4196a03d4ed0712c0b509ecdb28
+    latest_date: 2026-08-17
+    summary: "Latest MM APL now distinguishes raid-style 2T cleave from DungeonRoute priority damage, suppresses S2 4pc Explosive Shot multidotting in priority-target DungeonRoute contexts, restricts Rapid Fire clipping to Unload builds, adds an AoE Multi-Shot Focus-dump reserve rule, holds Trueshot up to ~15s for Explosive Shot outside overrides, and permits pure-2T non-DungeonRoute Rapid Fire target swapping."
   practical:
     wowhead:
-      summary: "Current public Marksmanship guidance already treats Multi-Shot as the Precise Shots spender on 2+ targets in general rotation language, while the detailed priority-target/DungeonRoute exceptions and final-boundary clipping are not yet documented."
-    method:
-      summary: "Current Method guide remains 12.0.7-era and does not document these Season 2 DungeonRoute-specific refinements."
+      summary: "Current public Marksmanship guidance already treats Multi-Shot as the general Precise Shots spender on 2+ targets and recommends setting up Trueshot around natural Aimed Shot/Rapid Fire flow, but does not yet document the 15-second Explosive Shot hold, DungeonRoute priority exception, or final-boundary clipping."
+    icy_veins:
+      summary: "Current public Icy Veins material remains pre-Season-2/12.0.7-era and does not document the newest 12.1 Trueshot/Explosive Shot or pure-2T Rapid Fire routing refinements."
   official:
-    summary: "Blizzard documents Unload and the Season 2 Explosive Shot redesign, but does not publish these APL routing rules as player-facing rotation instructions."
+    summary: "Blizzard documents the Season 2 Explosive Shot redesign and marks Season 2 as beginning August 18, but does not publish these APL routing rules as player-facing rotation instructions."
 confidence:
   simc_theoretical_branch: HIGH
   two_target_raid_vs_dungeonroute_split: HIGH_SIMC_PROVISIONAL_PRACTICAL
   unload_clip_requires_unload: HIGH
   aoe_focus_reserve_rule: HIGH_SIMC_PROVISIONAL_PRACTICAL
+  trueshot_explosive_alignment: HIGH_SIMC_PROVISIONAL_PRACTICAL
+  pure_two_target_rapid_fire_swap: HIGH_SIMC_PROVISIONAL_PRACTICAL
   live_log_validation: PENDING_SEASON2
 production_recommendation:
   stable_practical:
     - "Do not clip Rapid Fire without Unload."
     - "Preserve Aimed Shot Focus reserve before low-priority AoE dumps."
+    - "Do not target-swap Rapid Fire in DungeonRoute priority-damage contexts solely for aggregate 2T gain."
   provisional_machine_logic:
     - "Use explicit raid-vs-DungeonRoute priority branches for exactly 2 targets."
     - "Suppress Explosive Shot multidot cycling in DungeonRoute priority-target mode."
     - "Enable final-boundary Rapid Fire clipping only for Unload builds after latency-safe live validation."
+    - "Allow a configurable Trueshot hold up to ~15s for Explosive Shot alignment outside opener/fight-end/route overrides."
+    - "Enable Sentinel pure-2T Rapid Fire target swapping only for aggregate-damage objectives outside DungeonRoute."
 live_verify:
-  - "Season 2 raid and M+ do not open until the weekly reset window, so current high-end WCL cannot yet validate these new S2 branches."
-  - "After live data is available, compare 2T Arcane-vs-Multi usage in raid cleave versus M+ priority-target pulls."
+  - "Season 2 opens with the August 18 regional weekly reset, so current high-end S2 WCL cannot yet validate these newest branches at this check time."
+  - "After live data is available, compare 2T Rapid Fire target distribution in raid cleave versus M+ priority-target pulls."
+  - "Validate whether high-end players actually hold Trueshot for Explosive Shot by 5-15 seconds and under which fight-length / Bullseye states."
   - "Validate AoE Focus-dump frequency and whether the reserve rule ever delays Aimed Shot under realistic movement/latency."
   - "Validate Rapid Fire clip safety only in Unload builds and confirm no lost final tick/Unload event."
