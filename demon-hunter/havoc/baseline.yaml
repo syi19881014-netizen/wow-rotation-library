@@ -1,14 +1,15 @@
 spec: Havoc Demon Hunter
 version: "12.1 / Midnight Season 2"
-updated: 2026-08-15
+updated: 2026-08-18
 status: PROVISIONAL
 scope:
-  source_change: "SimulationCraft Season 2 APL rewrite"
+  source_change: "SimulationCraft Season 2 APL rewrite + MID2 4pc Essence Break CDR correction"
   season_start: 2026-08-18
 summary:
   - "SimC PR #11740 replaced the prior highly conditional Havoc APL with a much shorter Season 2 priority list."
   - "The rewrite materially changes cooldown admission and de-emphasizes several old heuristic variables for Inertia, Eye Beam alignment, Blade Dance thresholds, Fury forecasting, and Burning Wound retargeting."
-  - "Public practical guides are still 12.0.7-era and therefore cannot yet be treated as confirmation of the new Season 2 ordering."
+  - "2026-08-17 SimC correction confirms Eye Beam reducing Essence Break through Cycle of Hatred is a MID2 4pc-only interaction; no-4pc / pre-4pc branches must not receive this CDR."
+  - "Public practical guides are still behind the new Season 2 theoretical branch and cannot yet be treated as full confirmation of the new ordering."
 rules:
   season2_simc_core:
     status: PROVISIONAL
@@ -22,41 +23,55 @@ rules:
       - "Essence Break is admitted when Eye Beam remains >4s; Death Sweep is prioritized during Essence Break or Demonsurge windows."
       - "Blade Dance / Death Sweep become broadly rotational again after higher hero/cooldown states instead of the old target-count use_blade_dance heuristic."
       - "A Fire Inside + Burning Wound Immolation Aura charge-capping prevention is retained in simplified form."
+  mid2_4pc_cycle_of_hatred:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    hard_gate: "MID2_HAVOC_4PC_EQUIPPED"
+    rules:
+      - "Eye Beam may reduce Essence Break cooldown through Cycle of Hatred only when the Midnight Season 2 Havoc 4pc is actually equipped."
+      - "The interaction is not baseline Havoc behavior and must not be active in launch/no-set, 2pc-only, or broken-4pc gear states."
+      - "When Cycle of Hatred stacks 2-4 are applied under the 4pc, Eye Beam can reduce Essence Break according to the live mechanic modeled by SimC; exact cadence remains gear/build dependent."
+    forbidden:
+      - "Do not forecast Essence Break cooldown from Eye Beam as though this CDR exists without the 4pc."
+      - "Do not let the Season 2 set branch contaminate no-set SimC-equivalence tests or pre-4pc production logic."
   practical_current:
     status: STABLE_PRACTICAL_12_0_7
     notes:
       - "Wowhead still describes Havoc around keeping Blade Dance, Immolation Aura, and Eye Beam on cooldown, aligning Essence Break to every second Eye Beam, and pairing Vengeful Retreat with Eye Beam for Inertia/Initiative."
-      - "Method's current public guide is also still 12.0.7 and emphasizes Fel-Scarred burst, Death Sweep, Eye Beam, Metamorphosis and Inertia handling."
-      - "Until 12.1 Season 2 raid/M+ logs and updated class-guide/theorycrafter evidence appear, do not replace the current practical production branch wholesale with the new SimC APL."
+      - "Until 12.1 Season 2 raid/M+ logs and updated class-guide/theorycrafter evidence mature, do not replace the current practical production branch wholesale with the new SimC APL."
 automation:
   architecture:
     - "Separate hero-tree state (Fel-Scarred vs Aldrachi Reaver) from cooldown admission."
+    - "Evaluate equipped-set state before any Cycle of Hatred -> Essence Break CDR prediction."
     - "Evaluate pending Demonsurge actions before Metamorphosis admission."
-    - "Track Eye Beam remaining, Metamorphosis remaining/ready, Blade Dance cooldown, Essence Break debuff, Reaver's Glaive/Rending Strike/Glaive Flurry, Inertia/Initiative, Immolation Aura charges, Fury, and target count."
+    - "Track Eye Beam remaining, Metamorphosis remaining/ready, Blade Dance cooldown, Essence Break debuff/cooldown, Reaver's Glaive/Rending Strike/Glaive Flurry, Inertia/Initiative, Immolation Aura charges, Fury, target count, and MID2 set-piece state."
     - "Do not preserve deleted SimC helper variables as hard production rules unless live evidence independently supports them."
   recommended_policy:
-    simc_branch: "Use Season 2 SimC ordering for theoretical benchmark simulations."
-    production_branch: "Keep existing practical 12.0.7-style alignment until Season 2 live evidence validates the rewrite."
+    simc_branch: "Use Season 2 SimC ordering for theoretical benchmark simulations, with MID2 4pc mechanics enabled only when the profile actually has the 4pc."
+    production_branch: "Keep practical alignment safeguards until Season 2 live evidence validates the rewrite; no-4pc branches must use native Essence Break cooldown behavior."
     migration: "Promote individual Season 2 rules to STABLE only after guide/log/theorycrafter confirmation; preserve conflicts explicitly."
 evidence:
   simc:
-    pr: 11740
-    merge_commit: 4b45fc2bca9bc180a0108e496bc09ced45fd7a6a
-    merged: 2026-08-14
-    title: "[DH] Havoc Midnight Season 2 APL"
-    materiality: "Wholesale APL rewrite: old ~100-line conditional core replaced with a compact priority list."
-  wowhead:
-    checked: 2026-08-15
-    guide_state: "Public Havoc rotation page still identifies Patch 12.0.7; core guidance keeps Blade Dance/Immolation Aura/Eye Beam on cooldown and aligns Essence Break/Vengeful Retreat with Eye Beam."
-  method:
-    checked: 2026-08-15
-    guide_state: "Public guide still Patch 12.0.7 (last updated 2026-06-16)."
+    apl_pr: 11740
+    apl_merge_commit: 4b45fc2bca9bc180a0108e496bc09ced45fd7a6a
+    apl_merged: 2026-08-14
+    apl_title: "[DH] Havoc Midnight Season 2 APL"
+    set_fix_commit: a850d32e97ad9d35a1b64c1dafccc24de9985aa8
+    set_fix_date: 2026-08-17
+    set_fix_title: "[Havoc] fix Eye Beam giving EssB CDR without MID2 4pc"
+    set_fix_materiality: "Prevents false Essence Break cooldown reduction in every non-4pc profile; materially affects no-set/2pc theoretical timing and automation cooldown prediction."
+  wowhead_tier:
+    checked: 2026-08-18
+    guide_state: "The 12.1 Havoc 4pc explicitly makes Essence Break apply and benefit from Cycle of Hatred, confirming this is set-gated rather than baseline behavior."
+  community_ptr:
+    checked: 2026-08-18
+    guide_state: "PTR feedback independently discussed Essence Break receiving Cycle of Hatred-style cooldown reduction specifically as a consequence of the 4pc."
 confidence:
   simc_theoretical_branch: HIGH
+  mid2_4pc_gate: HIGH
   season2_live_practical_branch: LIVE_VERIFY
   current_practical_branch: MEDIUM_HIGH
 live_verify:
-  - "Season 2 begins 2026-08-18; inspect first high-end raid/M+ logs for Eye Beam -> Essence Break -> Death Sweep cadence and Metamorphosis admission."
+  - "Inspect first high-end Season 2 raid/M+ logs for Eye Beam -> Essence Break -> Death Sweep cadence with and without completed MID2 4pc."
   - "Check whether top players continue explicit Vengeful Retreat/Inertia pairing every Eye Beam or adopt the looser SimC timing."
   - "Validate Aldrachi Reaver Rending Strike/Glaive Flurry consumption order by target count."
   - "Validate whether deleted Burning Wound retargeting and target-count Blade Dance heuristics are truly obsolete or merely unnecessary for the new profile."
