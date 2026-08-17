@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-18 — Marksmanship Trueshot / Explosive Shot alignment and pure-2T Rapid Fire routing
+
+### Season 2 APL adds a new cooldown-hold and target-selection layer
+- SimulationCraft commit `7ba3610` (2026-08-17 UTC) materially changes Marksmanship execution in two places. First, Trueshot can now be held for up to roughly 15 seconds to align with Explosive Shot, except when opener/fight-end overrides already force Trueshot. Second, Sentinel Rapid Fire gains a target-swap line only outside DungeonRoute so pure 2-target simulations can maximize aggregate damage without imposing the same behavior on M+ priority-target play.
+- The exact Trueshot gate is no longer only Bullseye/fight-length driven: the APL now additionally requires Explosive Shot to be ready or at least 15 seconds away before releasing the ordinary Trueshot-ready state. This creates an explicit cooldown-alignment state rather than a flat 'send Trueshot when ready' rule.
+- Current public Wowhead Marksmanship guidance still recommends entering Trueshot around the natural Aimed Shot / Rapid Fire flow and does not yet document a 15-second Explosive Shot hold. Icy Veins remains pre-Season-2/12.0.7-era for this detail. Because Season 2 raid/M+ live data is not yet available at this regional check time, the practical value of the 5–15 second hold remains `LIVE_VERIFY` even though the SimC theoretical branch is high confidence.
+- The Rapid Fire target swap is deliberately restricted to non-DungeonRoute aggregate-damage contexts; the commit message explicitly calls out priority-damage loss in DungeonRoute. Automation must therefore keep `TOTAL_DAMAGE` and `PRIORITY_TARGET` as separate objectives rather than applying 2T target swapping universally.
+- Updated `hunter/marksmanship/baseline.yaml`; added `trueshot_explosive_shot_alignment` and `rapid_fire_two_target_targeting` branches while preserving the previous Unload clipping, 2T Precise Shots, Explosive Shot priority-routing, and Focus-reserve rules.
+
 ## 2026-08-17 — Marksmanship 2T / DungeonRoute branch refinement
 
 ### Season 2 APL adds context-sensitive spender and routing rules
