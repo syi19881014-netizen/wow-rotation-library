@@ -1,0 +1,64 @@
+spec: elemental_shaman
+wow_version: "12.1 / Midnight"
+updated: 2026-08-19
+status: PROVISIONAL
+
+source_of_truth:
+  simc_commit: c29d5053a78d335e5bec87d35880347f9b74f821
+  simc_date_utc: 2026-08-18
+  public_guides:
+    - source: Wowhead Elemental Shaman Rotation Guide
+      state: "public page still 12.0.7-era; confirms spender choice is talent/target-count dependent but does not yet expose these 12.1 exact 2-3T gates"
+    - source: Icy Veins Elemental Shaman Rotation
+      state: "public page still 12.0.7-era; useful practical framework only"
+
+material_update:
+  name: "2-3 target spender routing by hero/talent state"
+  summary:
+    - "Farseer/Call of the Ancestors no longer uses a generic Elemental Blast fallback on 2-3 targets. Earthquake becomes conditionally preferred while Ancestors are active / sufficiently stacked."
+    - "Stormbringer/Tempest keeps Elemental Blast and Lightning Rod spreading logic isolated from the Farseer branch."
+    - "At exactly 2 targets, Farseer can spend with Earthquake when Call of the Ancestors is active or at >=3 stacks under the matching spender-admission conditions."
+    - "At 3 targets, Lava Surge -> Lava Burst can be admitted to create Master of the Elements not only for Tempest but also for Farseer without Purging Flames."
+
+state_machine:
+  SPENDER_OBJECTIVE:
+    inputs:
+      - effective_targets
+      - hero_tree
+      - talent_elemental_blast
+      - talent_tempest
+      - talent_call_of_the_ancestors
+      - call_of_the_ancestors_active
+      - call_of_the_ancestors_stacks
+      - master_of_the_elements
+      - elemental_blast_stat_buffs
+      - lightning_rod_coverage
+      - maelstrom
+      - overcharge_tier
+      - flowing_elements
+    rules:
+      - when: "hero_tree == STORMBRINGER and talent_tempest"
+        action: "use Elemental Blast / Earthquake routing according to Lightning Rod coverage, EB stat buffs and target count; do not import Farseer Ancestor gates"
+      - when: "hero_tree == FARSEER and effective_targets == 2 and call_of_the_ancestors_stacks >= 3"
+        action: "admit Earthquake as a spender when MotE/resource/overcharge conditions match the current APL branch"
+      - when: "hero_tree == FARSEER and effective_targets == 2 and call_of_the_ancestors_active and not talent_elemental_blast"
+        action: "admit Earthquake under the same spender-ready conditions"
+      - when: "hero_tree == FARSEER and not call_of_the_ancestors_active and effective_targets <= 3 + 2*talent_call_of_the_ancestors"
+        action: "prefer Elemental Blast in the corresponding low-target spender branch"
+      - when: "effective_targets == 3 and talent_master_of_the_elements and lava_surge and (tempest_active or (hero_tree == FARSEER and not purging_flames))"
+        action: "Lava Burst may be used to establish Master of the Elements before the high-value spender"
+
+production_policy:
+  simc_benchmark:
+    status: HIGH_CONFIDENCE_THEORY
+    rule: "mirror c29d505 exact 2-3T spender branches"
+  practical_production:
+    status: LIVE_VERIFY
+    rule: "keep exact target-count/Ancestor-stack gates configurable until current 12.1 theorycrafter guides and Season 2 raid/M+ sequences converge"
+  stable_human_simplification:
+    rule: "avoid Maelstrom overcap; Farseer with active/stacked Ancestors can shift 2-3T spending toward Earthquake, while Stormbringer/Tempest retains its own EB/LR logic"
+
+runtime_notes:
+  - "Do not implement a single global '2T = X, 3T = Y' spender rule. Hero tree and Ancestor state are required inputs."
+  - "Re-evaluate spender admission every GCD after Ancestor spawn/expiration and after Master of the Elements changes."
+  - "Treat exact thresholds as LIVE_VERIFY for production until live Season 2 evidence is sufficient."
