@@ -1,6 +1,6 @@
 project: 魔兽循环
 wow_version: "12.1 / Midnight"
-updated: 2026-08-18
+updated: 2026-08-19
 specs:
   rogue:
     assassination: rogue/assassination/baseline.yaml
@@ -27,5 +27,6 @@ specs:
     havoc: demon-hunter/havoc/baseline.yaml
   shaman:
     enhancement: shaman/enhancement/baseline.yaml
+    elemental: shaman/elemental/baseline.yaml
 common:
   architecture: common/architecture.yaml
