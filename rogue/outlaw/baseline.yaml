@@ -1,10 +1,12 @@
 spec: Outlaw Rogue
 version: 12.1-MID2
-updated: 2026-08-16
+updated: 2026-08-18
 status: STABLE
 source_notes:
   - "SimulationCraft: [Outlaw] Initial MID2 APL (#11689)"
+  - "SimulationCraft: [Outlaw] Add MID2 Profile (#11753), 2026-08-18 UTC"
   - "Warcraft Logs official API v2: eight high-ranked 12.1 PTR Mythic+ reports collected 2026-08-15/16"
+  - "Wowhead 12.1 Outlaw set data: 2pc Dispatch +15%; 4pc Sinister Strike/Ambush 20% chance to grant Fang Strike (free max-CP Dispatch)."
 core_state_machine:
   OUTLAW_CD_STATE:
     order:
@@ -69,6 +71,26 @@ set_branches:
     status: STABLE
     blade_rush_admission: always_when_ready_and_position_safe
     isolation: "Enable only when equipped-set detection or an explicit runtime option confirms the bonus."
+  MID2_2PC_CHOSEN_BLOODSLAYER:
+    status: PROVISIONAL
+    effect: "Dispatch damage increased by 15%."
+    priority_rewrite: false
+    isolation: "Enable only when current 12.1 Season 2 set detection confirms 2pc or 4pc."
+  MID2_4PC_FANG_STRIKE:
+    status: PROVISIONAL
+    source_state: CURRENT_SEASON2
+    effect: "Sinister Strike and Ambush have a 20% chance to grant Fang Strike: the next Dispatch is free and deals damage as if maximum combo points were spent."
+    activation_evidence: "SimulationCraft enabled MID2_Rogue_Outlaw.simc in the main MID2 raid profile on 2026-08-18 with Chosen Bloodslayer tier pieces equipped."
+    automation:
+      detect_buff: fang_strike
+      early_dispatch_admission: "fang_strike_up AND Between the Eyes not ready AND Killing Spree not ready"
+      bypass_normal_combo_point_threshold: true
+      never_override_finishers:
+        - between_the_eyes
+        - killing_spree
+      rationale: "Current SimC APL explicitly sets finish_condition=1 for Fang Strike only when BtE and Killing Spree are unavailable; the proc is consumed early, but not above higher-value finishers."
+    practical_status: LIVE_VERIFY
+    practical_note: "Season 2 live raid/M+ evidence is still too new to establish whether encounter-specific holds ever outperform immediate legal consumption; default automation should mirror the APL gate until logs prove otherwise."
 live_evidence:
   PTR_MYTHIC_PLUS_2026_08_15:
     status: LIVE_VERIFY
@@ -101,7 +123,3 @@ diagnostics:
       killing_spree: 2.0
       coup_de_grace: 2.6
       blade_rush: 5.0
-future:
-  S2_4PC_FANG_STRIKE:
-    status: FUTURE
-    effect: "Can permit early Dispatch under specific cooldown/proc conditions."
