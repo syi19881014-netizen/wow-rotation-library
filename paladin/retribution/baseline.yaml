@@ -1,0 +1,65 @@
+spec: retribution_paladin
+wow_version: "12.1 / Midnight"
+updated: 2026-08-19
+status: PROVISIONAL
+
+source_of_truth:
+  simc_commit: 90b50481628cdb16334829319b992eaed459ce98
+  simc_date_utc: 2026-08-18
+  public_guides:
+    - source: Wowhead Retribution Paladin Rotation Guide
+      state: "public guide still mostly pre-12.1 detail; confirms Holy Power economy, proc management and Divine Storm as the multi-target spender"
+
+material_update:
+  summary:
+    - "Divine Storm admission is rewritten: generic 2+ target use is now explicit, with additional Divine Arbiter / Empyrean Power / Seal of the Templar / Dawnlight state gates."
+    - "Blade of Justice proc protection now reacts to 2 stacks of Art of War or Righteous Cause rather than spending immediately on any single proc."
+    - "The old special early Blade of Justice line used only to establish Expurgation in the first 5 seconds is removed."
+
+state_machine:
+  FINISHER_BRANCH:
+    inputs:
+      - effective_targets
+      - holy_power
+      - empyrean_legacy
+      - empyrean_power
+      - divine_arbiter_verdict
+      - divine_arbiter_divine_storm
+      - seal_of_the_templar
+      - dawnlight
+      - hammer_of_light_ready
+      - hammer_of_light_free
+    rules:
+      - when: "effective_targets >= 2 and not empyrean_legacy and Divine Arbiter special-state gates do not suppress Divine Storm"
+        action: "admit Divine Storm before Templar's Verdict"
+      - when: "effective_targets == 1"
+        action: "default to Templar's Verdict unless a proc/state-specific Divine Storm rule is explicitly satisfied"
+      - when: "hammer_of_light_ready and not hammer_of_light_free"
+        action: "preserve Hammer of Light priority over ordinary finishers"
+
+  GENERATOR_PROC_PRESSURE:
+    inputs:
+      - art_of_war_stacks
+      - righteous_cause_stacks
+      - walk_into_light
+      - avenging_wrath
+    rules:
+      - when: "art_of_war_stacks == 2 or righteous_cause_stacks == 2"
+        action: "raise Blade of Justice to prevent proc-stack waste, subject to Walk Into Light / Avenging Wrath gate"
+      - when: "only one proc stack is present"
+        action: "do not automatically force Blade of Justice above finishers/cooldowns solely for that proc"
+
+production_policy:
+  simc_benchmark:
+    status: HIGH_CONFIDENCE_THEORY
+    rule: "mirror 90b5048 12.1 finisher and 2-stack proc gates"
+  practical_production:
+    status: LIVE_VERIFY
+    rule: "use 2+ target Divine Storm as the default multi-target branch, but keep the new Divine Arbiter/Dawnlight state gates explicit rather than flattening to target count alone"
+  stable_human_simplification:
+    rule: "2+ meaningful targets generally Divine Storm; protect Holy Power from overcap; prioritize Blade of Justice more aggressively only when its relevant proc stacks are capped at 2"
+
+runtime_notes:
+  - "Do not encode Divine Storm as a target-count-only switch; the 12.1 APL has state-dependent suppression/admission around Divine Arbiter and Empyrean effects."
+  - "Track Art of War / Righteous Cause stack counts, not booleans, for proc-overcap prevention."
+  - "Keep exact 12.1 practical validation PROVISIONAL until current live raid/M+ sequence evidence accumulates."
