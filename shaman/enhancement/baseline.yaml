@@ -1,0 +1,77 @@
+spec: Enhancement Shaman
+version: 12.1
+updated: 2026-08-18
+status: PROVISIONAL
+scope:
+  hero_talents:
+    - Stormbringer
+    - Totemic
+  mechanics:
+    - Thorim's Invocation during Doom Winds / Ascendance
+    - Thunder Capacitor Maelstrom Weapon refunds
+    - Tempest refund behavior
+rules:
+  thorims_invocation_activation:
+    status: HIGH_CONFIDENCE_MECHANIC
+    behavior: "During Doom Winds or Ascendance, eligible activators discharge Thorim's Invocation and consume Maelstrom Weapon for the primed spender."
+    ascendance_crash_lightning:
+      action: "Crash Lightning must trigger Thorim's Invocation while Ascendance is active, not only during Doom Winds."
+      rationale: "SimulationCraft commit 351fcec corrected its engine check from Doom Winds only to Doom Winds OR Ascendance; current Wowhead 12.1 guidance already describes Crash Lightning and Windstrike as Thorim's Invocation activators during Ascendance."
+    automation:
+      state_gate: "doom_winds_up OR ascendance_up"
+      policy: "When the gate is active, treat eligible activators as simultaneous Maelstrom spend events through Thorim's Invocation; do not schedule a redundant manual spender solely to empty Maelstrom."
+
+  thunder_capacitor_refund:
+    status: HIGH_CONFIDENCE_MECHANIC
+    behavior: "Thunder Capacitor can refund the Maelstrom Weapon stacks actually consumed by Lightning Bolt, Chain Lightning, or Tempest, including eligible Thorim's Invocation variants."
+    tempest:
+      action: "Tempest is an eligible Thunder Capacitor refund source when it consumed Maelstrom Weapon."
+      rationale: "SimulationCraft commit 76042c6 added Thunder Capacitor refund handling to Tempest and retained the normal/Thorim's Invocation variant gate."
+    zero_spend_safeguard:
+      action: "Do not roll or credit a Thunder Capacitor refund when no Maelstrom Weapon stacks were consumed."
+      rationale: "SimulationCraft commit 96ddc9b added an explicit mw_consumed_stacks > 0 condition to prevent false refund triggers."
+    automation:
+      refund_event: "on_valid_spender_resolve AND maelstrom_spent > 0 AND thunder_capacitor_proc => restore maelstrom_spent"
+      consequence: "Immediately refresh resource state after a refund; do not assume the Thorim's Invocation activation emptied Maelstrom."
+      anti_overcap: "Because refunds can instantly return up to the amount spent, re-evaluate Maelstrom cap pressure before the next strike/GCD, especially inside Ascendance/Doom Winds where Static Accumulation and repeated Thorim's Invocation triggers create high generation."
+
+  cooldown_window_resource_policy:
+    status: STABLE_PRACTICAL_WITH_CORRECTED_MODEL
+    stormbringer_ascendance:
+      action: "Prioritize Crash Lightning and Windstrike activators; rely on Thorim's Invocation to perform spending during the window rather than inserting normal manual Lightning Bolt/Tempest casts just to dump Maelstrom."
+    totemic_doom_winds:
+      action: "Prioritize Crash Lightning / Stormstrike activators while respecting Totemic Hot Hand / Lava Lash window rules; Thorim's Invocation handles the Maelstrom spend when active."
+    refund_exception:
+      action: "If Thunder Capacitor refunds the spent Maelstrom, the next-state calculation must use the refunded resource immediately; this can raise overcap risk but does not by itself justify breaking the core activator priority."
+
+practical_comparison:
+  simc_theoretical:
+    summary: "The latest SimC engine corrections increase the fidelity of Enhancement resource flow by allowing Ascendance Crash Lightning to trigger Thorim's Invocation and by allowing Tempest to refund consumed Maelstrom through Thunder Capacitor."
+  high_end_practical:
+    summary: "Current Wowhead 12.1 guidance already recommends using Crash Lightning/Windstrike during Ascendance and relying on Thorim's Invocation instead of manually spending; it also warns that Thunder Capacitor/Supercharge refunds can create unavoidable Maelstrom overcap pressure. Therefore these SimC changes mostly correct the benchmark model rather than invent a new player-facing priority list."
+  stable_player:
+    summary: "Do not add extra manual spenders inside Ascendance/Doom Winds solely because Maelstrom is high; keep using the prescribed activators and accept some refund-driven overcap when no higher-value drain exists."
+  encounter_specific:
+    summary: "No boss/M+ exception is established by these commits. Encounter routing may still override cooldown usage, but the Thorim/Thunder Capacitor mechanics themselves are build-state mechanics rather than encounter-specific tactics."
+
+evidence:
+  simc:
+    crash_lightning_thorim_commit: 351fcec671c8c88b9fc042244fc9e6532a3074ba
+    thunder_capacitor_zero_spend_commit: 96ddc9b5f53bdc46890eb58afc0f2371086aa8a3
+    tempest_refund_commit: 76042c6127cf0ac8f8a3cc12847f921f8c4b1dc1
+    latest_date: 2026-08-17
+  practical:
+    wowhead:
+      summary: "Current Midnight Enhancement rotation guidance states that Thorim's Invocation operates during both Ascendance and Doom Winds; Crash Lightning is a priority activator, and Stormbringer Ascendance can suffer Maelstrom overcap from Thunder Capacitor/Supercharge refunds with no faster drain available."
+  official:
+    summary: "Blizzard's Midnight class notes define Thorim's Invocation as active during Ascendance or Doom Winds and describe Stormstrike/Crash Lightning as automatic Maelstrom spend activators."
+confidence:
+  thorims_invocation_ascendance_crash_lightning: HIGH
+  thunder_capacitor_tempest_refund: HIGH
+  resource_overcap_policy: HIGH_PRACTICAL
+  core_priority_rewrite_required: false
+production_recommendation:
+  - "Keep the current high-end Ascendance/Doom Winds activator priority; these commits are primarily a benchmark/runtime-model correction."
+  - "Runtime must refresh Maelstrom immediately after each Thorim's Invocation spender because Thunder Capacitor may refund the resource."
+  - "Do not model Tempest as ineligible for Thunder Capacitor when it actually consumed Maelstrom."
+  - "Do not create a refund from zero-spend casts."
