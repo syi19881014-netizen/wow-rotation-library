@@ -28,5 +28,7 @@ specs:
   shaman:
     enhancement: shaman/enhancement/baseline.yaml
     elemental: shaman/elemental/baseline.yaml
+  paladin:
+    retribution: paladin/retribution/baseline.yaml
 common:
   architecture: common/architecture.yaml
