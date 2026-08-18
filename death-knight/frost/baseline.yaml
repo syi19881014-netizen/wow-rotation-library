@@ -1,6 +1,6 @@
 spec: Frost Death Knight
 version: 12.1
-updated: 2026-08-15
+updated: 2026-08-19
 status: STABLE
 rules:
   frostwyrms_fury:
@@ -32,3 +32,37 @@ season2_tuning_2026_08_14:
     - "Re-sim DW vs 2H and Breath/Obliteration-style build gaps after tuning."
     - "Check whether reduced IDT/attack-speed scaling materially lowers the value of maximizing Freezing Tempest stacks in movement/uptime-constrained encounters."
     - "Do not create an extra GCD or hold rule solely to chase Freezing Tempest stacks unless post-tuning logs support it."
+season2_apl_2026_08_18:
+  status: PROVISIONAL
+  source: "SimulationCraft commit 959dc89 ([Death Knight] Frost profile updates)"
+  scope: "Cooldown admission/order and on-use trinket synchronization; does not replace the stable core KM/Rime/resource priority."
+  pillar_of_frost:
+    non_breath:
+      admission: "sending_cds AND (not Deathbringer OR runes >= 2), with fight-remains override"
+      change: "No longer waits on Reaper's Mark cooldown >10s before Pillar."
+    breath:
+      admission: "sending_cds AND breath_of_sindragosa_check AND (not Deathbringer OR runes >= 2)"
+      change: "Breath build now uses the explicit Breath readiness variable before Pillar rather than the previous loose Breath-CD/Runic-Power checks."
+  reapers_mark:
+    simc_order: "Pillar of Frost can be activated first; Reaper's Mark is then admitted while Pillar is active, when Pillar is >5s away, or at fight end."
+    conflict: "Current Wowhead 12.1 public Deathbringer opener still recommends Reaper's Mark before Pillar to free a Pillar GCD; older Method guidance is mixed by build and is not 12.1-current."
+    production_policy: "Do not globally supersede Reaper's-Mark-before-Pillar yet. Keep both opener/cooldown-order branches and validate against Season 2 live logs and updated class-theorycraft guidance."
+  frostwyrms_fury:
+    simc_gate_for_apex_branch: "Pillar of Frost active AND Bonegrinder Frost active, unless fight-end override; recall/buff-specific lines remain separate."
+    conflict: "Current Wowhead public guidance still favors using the initial Frostwyrm's Fury immediately/very early after Pillar for Apex value, while preferring the recall at strong Bonegrinder/Unholy Strength overlap."
+    production_policy: "Treat delaying the initial Frostwyrm's Fury for Bonegrinder Frost as LIVE_VERIFY; retain the stable rule that Frostwyrm's Fury must be inside Pillar, and do not hard-delay every first cast until live evidence confirms it."
+  trinkets:
+    change: "Damage on-use trinkets now compare their cooldown to Pillar cooldown more directly instead of using a fixed >20s Pillar separation in several branches."
+    production_policy: "Keep item logic isolated from the class core and resolve per equipped trinket."
+  automation:
+    required_states:
+      - "PILLAR_ADMISSION"
+      - "BREATH_READY_STATE"
+      - "REAPERS_MARK_ORDER_BRANCH"
+      - "BONEGRINDER_FROST_STATE"
+      - "TRINKET_ALIGNMENT"
+    note: "This is a cooldown-state-machine update, not a flat action-priority rewrite."
+  live_verify:
+    - "Season 2 Deathbringer opener: Reaper's Mark -> Pillar versus Pillar -> Reaper's Mark."
+    - "Whether first Frostwyrm's Fury is actually delayed until Bonegrinder Frost in top raid/M+ play, versus only optimizing the recall for Bonegrinder."
+    - "Breath build rune/Runic-Power preparation before Pillar under real movement and target downtime."
