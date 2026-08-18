@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-18 — Enhancement Shaman Thorim's Invocation / Thunder Capacitor model correction
+
+### SimC benchmark and runtime resource-state correction; practical priority largely unchanged
+- SimulationCraft commit `351fcec` (2026-08-17 UTC) fixes Crash Lightning so it triggers Thorim's Invocation during Ascendance as well as Doom Winds. Current Wowhead 12.1 guidance already treats Crash Lightning/Windstrike as Ascendance activators, so this brings the theoretical model into line with the published practical rotation rather than introducing a new player-facing priority.
+- SimulationCraft commit `76042c6` adds Thunder Capacitor refund handling to Tempest when Maelstrom Weapon was actually consumed, including the eligible normal/Thorim's Invocation variants. Commit `96ddc9b` adds the matching `mw_consumed_stacks > 0` guard so zero-spend casts cannot generate false refunds.
+- This materially affects benchmark/resource simulation and automation state tracking: after every Thorim's Invocation discharge the runtime must refresh Maelstrom immediately because Thunder Capacitor may restore the amount just spent. Do not assume an activator leaves the character at zero/low Maelstrom.
+- Public Wowhead Midnight guidance already warns that Stormbringer Ascendance can overcap Maelstrom because Thunder Capacitor/Supercharge refunds occur while Thorim's Invocation is spending through Crash Lightning/Windstrike, and notes that there may be no faster legal drain. Therefore the production priority remains the existing activator-first approach rather than inserting manual spenders merely to fight refund-driven overcap.
+- Added `shaman/enhancement/baseline.yaml` and indexed it. Core priority rewrite is `false`; the change is classified as a high-confidence mechanic/model correction with direct runtime implications.
+
 ## 2026-08-18 — Marksmanship Trueshot / Explosive Shot alignment and pure-2T Rapid Fire routing
 
 ### Season 2 APL adds a new cooldown-hold and target-selection layer
@@ -117,10 +126,3 @@ Imported all rotation-library decisions that had been explicitly accepted or mar
 - Windwalker Monk MID2 resource/proc/burst state architecture.
 - Guardian Druid Rage/Apex arbitration and survival reserve layer.
 - Common Cast Admission / CAST_POLICY architecture.
-
-### Provisional / live verification
-- Assassination Rogue Implacable Envenom late-refresh threshold.
-- Assassination Deathstalker M+ FoK default builder / ~3 Unshakeable Drive Mutilate threshold.
-- Fire Mage no-Heating-Up Pyroclasm Fire Blast weave timing and possible double-weave.
-- Arcane Mage competing opener variants.
-- Unholy DK Epidemic ordering.
