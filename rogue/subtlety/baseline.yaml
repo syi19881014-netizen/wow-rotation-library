@@ -1,10 +1,11 @@
 spec: Subtlety Rogue
 version: 12.1
-updated: 2026-08-16
+updated: 2026-08-19
 status: STABLE
 source_notes:
   - "SimulationCraft: [Subtlety] 12.1 Update (#11704)"
   - "SimulationCraft commit 85cb849 (2026-08-15 UTC): Update Deepening Shadows Behavior"
+  - "SimulationCraft commit 8418766 (2026-08-18 UTC): Update 2t builders (#11751)"
 shadow_dance:
   Deathstalker:
     energy_floor_approx: 30
@@ -33,6 +34,39 @@ shadow_dance:
     practical_conflict:
       - "Current Wowhead practical guidance still describes Deepening Shadows as timing-sensitive, including one-second update behavior and macro/timing methods to avoid losing the final Dance GCD."
       - "The new SimC behavior means later haste gains may rescue/extend an active Dance, but it does not prove the old practical macro/timing advice is obsolete in every haste/trinket case."
+season2_2t_builder_update:
+  status: PROVISIONAL
+  evidence: "SimC commit 8418766 materially rewrites Subtlety 2-target builder routing and explicitly states that Shadowstrike is no longer used at 3 targets, and not even at 2 targets with the Midnight Season 2 2pc equipped."
+  builder_routing:
+    no_mid2_2pc:
+      one_target: "Shadowstrike while stealth/Dance; Gloomblade/Backstab outside stealth according to normal state."
+      two_targets: "Shadowstrike remains admitted during stealth/Dance; outside the stealth-specific branch normal AoE builder logic may use Shuriken Storm."
+      three_plus_targets: "Prefer Shuriken Storm rather than Shadowstrike unless an explicit priority-target override applies."
+    mid2_2pc_equipped:
+      one_target: "Shadowstrike remains the stealth/Dance builder."
+      two_plus_targets: "Shuriken Storm becomes the default aggregate-damage builder; do not keep Shadowstrike merely because there are only two targets."
+  runtime_requirement:
+    - "SET_STATE must be evaluated before target-count builder selection."
+    - "Keep a PRIORITY_TARGET override separate from TOTAL_DAMAGE routing; SimC retains variable.priority_rotation as an explicit escape hatch."
+    - "Do not encode the old public-guide rule 'Shadowstrike at <=3 targets during Dance' as a permanent threshold."
+  practical_conflict:
+    - "The currently published Wowhead Midnight rotation guide still says Shadowstrike at 3 or fewer targets during Shadow Dance and Shuriken Storm outside Dance on multi-target, so it has not yet caught up to the 2026-08-18 SimC Season 2 builder split."
+    - "Because Season 2 live logs are only beginning to accumulate, the exact practical gain and target-priority exceptions remain LIVE_VERIFY."
+secret_technique_alignment_2026_08_18:
+  status: PROVISIONAL
+  deathstalker:
+    rule: "Secret Technique should be used during Shadow Dance rather than intentionally outside Dance."
+    rationale: "Commit 8418766 removes the previous generic outside-Dance admission and its author note says the change is intended to stop Deathstalker Secret Technique being used outside Dance."
+  trickster:
+    rule: "Secret Technique may still be used outside Dance only when Unseen Blade is talented, Secret Technique's effective cooldown duration is below 18s, and Shadow Dance is not ready."
+  automation:
+    - "Hero talent must be checked before off-Dance Secret Technique admission."
+    - "Deathstalker off-Dance Secret Technique should be blocked unless a future encounter-specific override is separately validated."
+    - "Do not collapse Trickster and Deathstalker into one shared Secret Technique rule."
+finisher_spacing_2026_08_18:
+  status: PROVISIONAL
+  change: "Several Trickster finisher gates move from Secret Technique remains >=6s to >=3s, including Coup de Grace and ordinary Eviscerate/Black Powder spacing logic."
+  automation: "Use 3s as the current SimC theoretical spacing threshold, but keep it configurable until Season 2 top-log sequencing validates the live threshold."
 goremaws_bite:
   role: "Dance/Ancient Arts window tool, not generic builder"
   state: GOREMAW_WINDOW
@@ -43,10 +77,15 @@ ancient_arts:
     - ancient_arts_state
     - supercharger_state
     - secret_technique_cooldown
+  apex_fishing_2026_08_18:
+    status: PROVISIONAL
+    rule: "When build_at_max_for_apex is active at <=2 targets, Gloomblade is inserted ahead of Shadowstrike if Lingering Shadow is at least 35 stacks and the corresponding Darkest Night / Supercharge-Unseen Blade / Secret Technique-ready gate is satisfied."
+    warning: "This is an Apex-fishing optimization, not a generic 'Gloomblade > Shadowstrike' rule."
 aoe:
   finisher_threshold_depends_on:
     - hero_talent
     - target_count
+    - midnight_season_2_2pc
 prepull:
   supercharger_preparation:
     status: STABLE
@@ -55,3 +94,5 @@ prepull:
 live_verify:
   coup_de_grace_gcd_bug: "~1.2s observed behavior; do not freeze as permanent design"
   deepening_shadows_mid_dance_extension: "Verify on live 12.1 with haste proc gain/loss during an already active Shadow Dance and measure exact refresh cadence/rounding before promoting to STABLE runtime semantics."
+  season2_2t_builder_split: "Compare no-2pc vs MID2-2pc top logs on exactly two sustained targets and M+ priority-target pulls; verify when Shuriken Storm replaces Shadowstrike in practical play."
+  secret_technique_outside_dance: "Validate that Deathstalker high-end live play keeps Secret Technique inside Dance while Trickster retains only the short-CD/Dance-unavailable exception."
