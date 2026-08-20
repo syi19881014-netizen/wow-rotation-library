@@ -1,6 +1,6 @@
 spec: Marksmanship Hunter
 version: 12.1
-updated: 2026-08-18
+updated: 2026-08-21
 status: PROVISIONAL
 scope:
   hero_talents:
@@ -13,6 +13,7 @@ scope:
     - AoE Focus dumping
     - Trueshot / Explosive Shot cooldown alignment
     - 2-target Rapid Fire target routing
+    - Aspect of the Hydra Rapid Fire tick behavior
 rules:
   unload_precise_shots_channel_end:
     behavior: "The second Unload shot fired at Rapid Fire channel end consumes Precise Shots on a slight delay on live behavior as modeled by SimC bugs mode."
@@ -89,6 +90,19 @@ rules:
       gate: "active_enemies == 2 AND NOT dungeonroute AND aggregate_damage_objective"
       target_policy: "prefer target with Sentinel's Mark down when the pure-2T aggregate branch is active; otherwise keep priority-target routing"
 
+  hydra_rapid_fire_tick_behavior:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    behavior: "With Aspect of the Hydra, the secondary-target Rapid Fire copy now triggers on every Rapid Fire channel tick in the current SimC live model; the previous 2026-08-14 bugs-mode assumption that Hydra fired only on every other tick has been removed."
+    impact:
+      - "This materially raises the modeled value of Rapid Fire in Hydra cleave and makes secondary-target routing more important in 2-target/low-target aggregate-damage scenarios."
+      - "It does not by itself prove a new GCD priority order; the existing Rapid Fire, Precise Shots, Trueshot and priority-target branches remain in force until live logs/theorycraft show a rotation rewrite is warranted."
+      - "Because Rapid Fire contributes more complete Hydra replication than the old every-other-tick model, do not use the superseded half-frequency assumption in damage forecasting or target-selection heuristics."
+    practical_context: "Current Wowhead Midnight guidance already treats Aspect of the Hydra as a powerful 2-target cleave option and states that Hydra-based AoE follows the single-target priority naturally, but public guides do not document the now-removed every-other-tick bug model."
+    automation:
+      damage_model: "When Aspect of the Hydra is active, account for a Hydra secondary event on every Rapid Fire tick rather than alternating ticks."
+      target_policy: "Keep TOTAL_DAMAGE versus PRIORITY_TARGET routing explicit; increased Hydra replication is not permission to swap off a dangerous priority target in M+."
+      clipping_safeguard: "Do not change the Unload final-boundary clipping admission solely because Hydra now fires every tick; validate the final tick and Hydra secondary event under live latency before promoting clipping to production."
+
 evidence:
   simc:
     mechanic_commit: 94f7e089da69c54b46d40a7a553e81f15334d4c7
@@ -97,15 +111,16 @@ evidence:
     unload_gate_correction_commit: bf3ef4410b6adf75fb77d05d8827205cc85e9656
     aoe_focus_dump_commit: ecf37b9f753023234ba9c29e5986d4814b5eeaf9
     trueshot_and_rapid_fire_routing_commit: 7ba36108b440c4196a03d4ed0712c0b509ecdb28
-    latest_date: 2026-08-17
-    summary: "Latest MM APL now distinguishes raid-style 2T cleave from DungeonRoute priority damage, suppresses S2 4pc Explosive Shot multidotting in priority-target DungeonRoute contexts, restricts Rapid Fire clipping to Unload builds, adds an AoE Multi-Shot Focus-dump reserve rule, holds Trueshot up to ~15s for Explosive Shot outside overrides, and permits pure-2T non-DungeonRoute Rapid Fire target swapping."
+    hydra_rapid_fire_tick_commit: 48bf7e85fa6832a0c276bb26c0f00a67bdd817ae
+    latest_date: 2026-08-20
+    summary: "Latest MM modeling now removes the old Aspect of the Hydra every-other-Rapid-Fire-tick bug assumption: Hydra's secondary Rapid Fire event triggers on every channel tick. Existing raid-vs-DungeonRoute priority splits, Unload clipping gate, Focus reserve, Trueshot/Explosive alignment and pure-2T routing remain otherwise unchanged."
   practical:
     wowhead:
-      summary: "Current public Marksmanship guidance already treats Multi-Shot as the general Precise Shots spender on 2+ targets and recommends setting up Trueshot around natural Aimed Shot/Rapid Fire flow, but does not yet document the 15-second Explosive Shot hold, DungeonRoute priority exception, or final-boundary clipping."
+      summary: "Current public Marksmanship guidance treats Aspect of the Hydra as a strong 2-target cleave talent and says Hydra-based AoE naturally follows the single-target priority, but does not document an every-other-tick restriction; this is directionally consistent with the corrected full-tick model."
     icy_veins:
-      summary: "Current public Icy Veins material remains pre-Season-2/12.0.7-era and does not document the newest 12.1 Trueshot/Explosive Shot or pure-2T Rapid Fire routing refinements."
+      summary: "No newer public practical source found in this check that documents a different Rapid Fire/Hydra tick cadence or requires a GCD-priority rewrite."
   official:
-    summary: "Blizzard documents the Season 2 Explosive Shot redesign and marks Season 2 as beginning August 18, but does not publish these APL routing rules as player-facing rotation instructions."
+    summary: "Blizzard's current public 12.1 notes describe Aspect of the Hydra as a cleave mechanic and update which abilities it includes, but do not specify a player-facing every-other-tick Rapid Fire restriction."
 confidence:
   simc_theoretical_branch: HIGH
   two_target_raid_vs_dungeonroute_split: HIGH_SIMC_PROVISIONAL_PRACTICAL
@@ -113,21 +128,24 @@ confidence:
   aoe_focus_reserve_rule: HIGH_SIMC_PROVISIONAL_PRACTICAL
   trueshot_explosive_alignment: HIGH_SIMC_PROVISIONAL_PRACTICAL
   pure_two_target_rapid_fire_swap: HIGH_SIMC_PROVISIONAL_PRACTICAL
+  hydra_rapid_fire_every_tick: HIGH_SIMC_PROVISIONAL_LIVE
   live_log_validation: PENDING_SEASON2
 production_recommendation:
   stable_practical:
     - "Do not clip Rapid Fire without Unload."
     - "Preserve Aimed Shot Focus reserve before low-priority AoE dumps."
     - "Do not target-swap Rapid Fire in DungeonRoute priority-damage contexts solely for aggregate 2T gain."
+    - "Do not model Aspect of the Hydra Rapid Fire as only firing on alternating channel ticks."
   provisional_machine_logic:
     - "Use explicit raid-vs-DungeonRoute priority branches for exactly 2 targets."
     - "Suppress Explosive Shot multidot cycling in DungeonRoute priority-target mode."
     - "Enable final-boundary Rapid Fire clipping only for Unload builds after latency-safe live validation."
     - "Allow a configurable Trueshot hold up to ~15s for Explosive Shot alignment outside opener/fight-end/route overrides."
     - "Enable Sentinel pure-2T Rapid Fire target swapping only for aggregate-damage objectives outside DungeonRoute."
+    - "For Hydra builds, include a secondary Hydra Rapid Fire event for every channel tick in damage/target forecasting."
 live_verify:
-  - "Season 2 opens with the August 18 regional weekly reset, so current high-end S2 WCL cannot yet validate these newest branches at this check time."
-  - "After live data is available, compare 2T Rapid Fire target distribution in raid cleave versus M+ priority-target pulls."
+  - "Season 2 live data is now available but still early; compare Hydra Rapid Fire secondary-event counts against primary Rapid Fire ticks in current 12.1 logs."
+  - "Compare 2T Rapid Fire target distribution in raid cleave versus M+ priority-target pulls."
   - "Validate whether high-end players actually hold Trueshot for Explosive Shot by 5-15 seconds and under which fight-length / Bullseye states."
   - "Validate AoE Focus-dump frequency and whether the reserve rule ever delays Aimed Shot under realistic movement/latency."
-  - "Validate Rapid Fire clip safety only in Unload builds and confirm no lost final tick/Unload event."
+  - "Validate Rapid Fire clip safety only in Unload builds and confirm no lost final tick/Hydra/Unload event."
