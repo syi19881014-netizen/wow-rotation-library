@@ -9,6 +9,13 @@ rules:
     aoe_consumer: Epidemic
   aoe:
     sudden_doom_epidemic_priority: true
+  dark_transformation_blightfall_gcd:
+    dark_transformation_triggers_gcd: false
+    blightfall_replacement_uses_shared_gcd: true
+    blightfall_talent_does_not_make_dark_transformation_consume_gcd: true
+    status: STABLE_MECHANIC
+    source_commit: c4df10535dd4812a786e000e0241520d0da30db6
+    note: "SimC corrected Dark Transformation to trigger_gcd=0 even when Blightfall is talented. The data-level 1.5s GCD belongs to the shared/replacement Blightfall action and must not be charged to Dark Transformation itself."
   army_orders:
     epidemic_order:
       source: lesser_ghoul_pet
@@ -30,23 +37,32 @@ rules:
     status: PROVISIONAL_HIGH_CONFIDENCE
 automation:
   priority_rewrite_required: false
+  execution_policy_updates:
+    - Treat Dark Transformation as an off-GCD cooldown even when Blightfall is talented.
+    - Do not reserve or consume a player GCD for Dark Transformation itself; only the follow-up/replacement Blightfall action participates in its own shared GCD.
+    - Allow Dark Transformation to be woven alongside the normal highest-value GCD action when API/runtime execution ordering permits.
   state_model_updates:
     - Do not model Epidemic Order as a DK-side proxy action that additionally triggers Rune of the Apocalypse.
     - When a qualifying San'layn execute-talent trigger occurs, trigger Transfusion across all active Lesser Ghouls.
     - For Unholy, model each Transfusion application as an 8-second pet buff and allow overlapping/repeated applications; do not hard-cap each ghoul at one stack unless later live evidence establishes a cap.
     - Remove the old Lord of the Dead Magus Frostbolt shortened-GCD bug assumption.
   safeguards:
+    - Do not invent a hold rule solely from the Dark Transformation GCD correction; it changes execution scheduling, not the underlying priority target or cooldown valuation.
+    - Do not double-submit Blightfall in the same execution slot as Dark Transformation; resolve the replacement/shared-GCD action separately after the transformation state is established.
     - Do not invent a new player GCD or hold rule solely from these pet-side fixes.
     - Keep Army of the Dead Scourge Strike ordering driven by nearby-enemy Order selection; player does not directly choose Death Order vs Epidemic Order.
     - Do not promote the exact maximum Transfusion stack count to STABLE until live-log or spell-data evidence confirms it.
 live_verify:
+  dark_transformation_off_gcd_with_blightfall: false
+  dark_transformation_blightfall_runtime_ordering: true
   epidemic_order_model: false
   transfusion_live_logs: true
   transfusion_exact_stack_ceiling: true
   lord_of_the_dead_cast_timing: true
-  note: "2026-08-20 SimC incorporated Blizzard-side bugfix behavior. A follow-up correction at 04:00 UTC removed the erroneous one-stack cap and restored an 8-second Unholy Transfusion duration. Core player priority remains unchanged; pet-state modeling must follow the corrected semantics."
+  note: "2026-08-20 SimC incorporated Blizzard-side bugfix behavior and then corrected Dark Transformation/Blightfall GCD semantics. Dark Transformation itself remains off-GCD even with Blightfall talented; runtime ordering of the immediate follow-up Blightfall remains worth live verification. Core player priority is not otherwise rewritten."
 evidence:
   simc_commits:
     - ab6ab283c995a809410dc31029a0066700178cdb
     - aa424a18d8557a35d8b0e8924d0e135fb850e0d4
     - 7ea02cb865fd4dd07a5be52d5bb6a1fe538c487e
+    - c4df10535dd4812a786e000e0241520d0da30db6
