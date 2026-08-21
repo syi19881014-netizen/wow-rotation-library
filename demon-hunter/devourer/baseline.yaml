@@ -1,0 +1,63 @@
+spec: Devourer Demon Hunter
+version: "12.1 / Midnight Season 2"
+updated: 2026-08-21
+status: PROVISIONAL
+scope:
+  source_change: "SimulationCraft commit 304783b — Devourer APL update"
+summary:
+  - "Season 2 Devourer APL materially changes Reap admission in AoE, Eradicate timing, and Void Metamorphosis filler behavior."
+  - "Single-target keeps the familiar 4-soul Reap cadence, while multi-target Reap is now gated more tightly around Eradicate and Moment of Craving instead of broadly firing at low soul counts."
+  - "Public Wowhead 12.1 guidance confirms Devourer is still a state-driven builder/spender spec centered on Fury, Soul Fragments, Void Ray, Reap, Void Metamorphosis and Collapsing Star, but does not yet document these exact new Season 2 thresholds."
+rules:
+  reap_admission:
+    status: PROVISIONAL
+    single_target:
+      - "Outside Metamorphosis, allow Reap at >=4 souls when doing so will not drop a planned Meta window."
+      - "Generic single-target Reap remains admitted at >=4 souls."
+      - "At fight end <=6s, allow Reap at >=1 soul."
+    multi_target:
+      - "Do not reuse the single-target generic >=4-soul Reap line unconditionally in AoE."
+      - "With Eradicate active, the new AoE threshold is 4 souls, increased to 10 while Moment of Craving is active (4 + 6*MomentOfCraving)."
+      - "During Metamorphosis + Collapsing Star preparation, require >=4 souls before Reap can contribute to the 30-stack Collapsing Star condition."
+  eradicate_timing:
+    status: PROVISIONAL
+    notes:
+      - "Inside the VSM Meta branch, remove the old 'Reap souls consumed >=10' standalone Eradicate trigger."
+      - "Eradicate is now primarily admitted when Moment of Craving is about to expire or Void Ray is within roughly one GCD, while Soulburst must be down."
+      - "Outside Meta, remove the old 10-soul Eradicate dump condition; prefer Void Ray / Hungering Slash / Soul Immolation / Reap state flow instead."
+  meta_filler:
+    status: PROVISIONAL
+    notes:
+      - "The previous Throw Glaive filler line during high-Fury VSM Meta was removed; the APL now waits in 0.05s increments when the Void Ray count state is already >=2 rather than spending a GCD on Throw Glaive."
+      - "Do not add a replacement filler without live evidence; preserving Void Ray/Meta timing is more important than forcing every GCD."
+  set_and_buff_state:
+    status: LIVE_VERIFY
+    notes:
+      - "Moment of Craving materially changes the AoE Reap threshold and therefore must be tracked as a first-class buff state."
+      - "MID2 4pc-dependent branches remain isolated from no-set/2pc states; do not infer a universal Reap threshold from a full-set profile."
+automation:
+  architecture:
+    - "Evaluate TARGET_COUNT before Reap admission; ST and AoE no longer share one generic soul threshold."
+    - "Track souls_consumed_by_reap, Eradicate, Moment of Craving, Void Ray cooldown, Soulburst, Metamorphosis, Collapsing Star stacks, Fury, fight remains, and MID2 set state."
+    - "Allow deliberate short waits inside Void Metamorphosis when the next high-value Void Ray state is imminent; do not force low-value filler just to avoid idle time."
+  recommended_policy:
+    simc_branch: "Use the 2026-08-20/21 APL changes as the current theoretical benchmark."
+    production_branch: "Adopt the state-machine structure, but keep exact AoE thresholds PROVISIONAL until Season 2 logs/theorycrafter guides confirm them."
+evidence:
+  simc:
+    commit: 304783bce59feed647af53be6867f52d558240f2
+    title: "[Devourer] update APL"
+    date_utc: 2026-08-20
+    materiality: "Changes Reap target-count gates, Eradicate admission, Meta filler, and end-of-fight handling."
+  wowhead:
+    checked: 2026-08-21
+    guide_updated: 2026-08-12
+    guide_state: "12.1 guide confirms a Fury/Soul Fragment builder-spender rotation centered on Void Ray, Reap, Void Metamorphosis and Collapsing Star; exact new SimC AoE thresholds are not yet documented publicly."
+confidence:
+  simc_theoretical_branch: HIGH
+  practical_exact_thresholds: LIVE_VERIFY
+  core_state_machine_direction: HIGH
+live_verify:
+  - "Compare top Season 2 raid and M+ Devourer logs for AoE Reap counts during Eradicate with and without Moment of Craving."
+  - "Check whether high-end players intentionally leave brief idle gaps in Void Metamorphosis instead of using Throw Glaive filler."
+  - "Validate whether 4 vs 10 soul AoE Reap thresholds hold across both hero-talent/build variants and completed MID2 4pc."
