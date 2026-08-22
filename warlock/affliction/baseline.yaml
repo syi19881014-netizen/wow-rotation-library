@@ -1,0 +1,60 @@
+spec: Affliction Warlock
+wow_version: "12.1 / Midnight Season 2"
+updated: 2026-08-22
+status: PROVISIONAL
+
+scope:
+  purpose: "Track current Affliction execution/state semantics without inventing a new player priority from SimC-only mechanic fixes."
+  core_priority_rewrite_required: false
+
+practical_core:
+  status: STABLE_PRACTICAL
+  rules:
+    - "Maintain Agony and Corruption/Wither on worthwhile targets."
+    - "Avoid Soul Shard overcap; pool only for a planned damage window."
+    - "Use Unstable Affliction as the primary single-target spender and Seed of Corruption in appropriate stacked multi-target situations."
+    - "React to Shard Instability; its free instant UA/Seed proc must not overcap."
+    - "Dark Harvest remains a high-value cooldown/priority-target tool rather than a mechanic to hold solely because of the fixes below."
+
+season2_4pc_ua_state:
+  status: PROVISIONAL_HIGH_CONFIDENCE
+  source: "SimulationCraft 22b442e (2026-08-22 UTC) plus current 12.1 tier/guide semantics"
+  rules:
+    - "Seed of Corruption can apply the Season 2 4pc reduced-effect Unstable Affliction to its selected target."
+    - "The seed-applied UA increments Hellcaller Blackened Soul / Wither stacks on impact."
+    - "Fatal Echoes-applied UA does NOT increment Blackened Soul / Wither stacks."
+    - "Seed-applied UA does NOT consume Succulent Soul."
+    - "Seed-applied UA does NOT reduce Dark Harvest cooldown through Cull the Weak."
+    - "Seed of Corruption and its seed-applied UA consume at most one Shard Instability stack in total for the cast sequence."
+    - "Do not model a second Shard Instability consumption from the attached tier-UA."
+  automation:
+    - "Track UA application origin: manual, Fatal Echoes, or Season-2-4pc Seed UA."
+    - "Resolve proc/resource side effects by origin before the next action admission pass."
+    - "Do not use one generic 'UA applied' callback for Blackened Soul, Succulent Soul, Cull the Weak, and Shard Instability."
+
+wither_dot_count:
+  status: HIGH_CONFIDENCE
+  rules:
+    - "Wither now counts as an Affliction DoT for effects such as Withering Bolt."
+    - "Any runtime dot-count helper used by Withering Bolt must include Wither."
+
+deaths_embrace:
+  status: PROVISIONAL_HIGH_CONFIDENCE
+  rules:
+    - "Malefic Grasp benefits from Death's Embrace in the current model."
+    - "Malefic Grasp also benefits from Withering Bolt based on the current valid Affliction DoT count."
+    - "Current live-bug modeling indicates Unstable Affliction does not gain Death's Embrace while any seed-applied 4pc UA stack is active on that target."
+  safeguard:
+    - "Do not turn this execute-state correction into a new hold rule without WCL/theorycrafter evidence."
+
+evidence_conflict:
+  public_guides:
+    - "Wowhead 12.1 (updated 2026-08-12/13) still presents the normal generator/spender loop and emphasizes Shard Instability proc handling."
+    - "Method 12.1 (updated 2026-08-12) likewise keeps the ordinary DoT maintenance, Dark Harvest and shard-spend framework."
+  interpretation: "The 2026-08-22 SimC changes are primarily live-mechanic/state corrections. They can alter tier/hero-value simulations and runtime state forecasting, but current evidence does not justify replacing the public practical GCD priority."
+
+live_verify:
+  - "WCL Season 2 samples for Hellcaller vs Soul Harvester under 4pc."
+  - "Whether the seed-UA Death's Embrace exception is consistently reproducible in live combat."
+  - "Exact value impact of Blackened Soul from seed-applied UA on AoE/priority-target routing."
+  - "Whether these fixes change preferred talent/build choice enough to require a future priority rewrite."
