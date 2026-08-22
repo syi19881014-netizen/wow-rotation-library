@@ -1,6 +1,6 @@
 project: 魔兽循环
 wow_version: "12.1 / Midnight"
-updated: 2026-08-21
+updated: 2026-08-22
 specs:
   rogue:
     assassination: rogue/assassination/baseline.yaml
@@ -31,5 +31,7 @@ specs:
     elemental: shaman/elemental/baseline.yaml
   paladin:
     retribution: paladin/retribution/baseline.yaml
+  warlock:
+    affliction: warlock/affliction/baseline.yaml
 common:
   architecture: common/architecture.yaml
