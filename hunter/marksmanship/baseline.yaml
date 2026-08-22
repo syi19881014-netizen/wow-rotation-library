@@ -1,6 +1,6 @@
 spec: Marksmanship Hunter
 version: 12.1
-updated: 2026-08-21
+updated: 2026-08-23
 status: PROVISIONAL
 scope:
   hero_talents:
@@ -8,144 +8,119 @@ scope:
     - Sentinel
   mechanics:
     - Rapid Fire channel-end / Precise Shots consumption
+    - single-target versus AoE Rapid Fire clipping
+    - Precise Shots ordering around Rapid Fire
     - 2-target Precise Shots spender selection
     - Explosive Shot priority-target routing
     - AoE Focus dumping
     - Trueshot / Explosive Shot cooldown alignment
     - 2-target Rapid Fire target routing
+    - Aimed Shot nameplate routing
     - Aspect of the Hydra Rapid Fire tick behavior
 rules:
-  unload_precise_shots_channel_end:
-    behavior: "The second Unload shot fired at Rapid Fire channel end consumes Precise Shots on a slight delay on live behavior as modeled by SimC bugs mode."
-    theoretical_optimization:
-      action: "Only with Unload talented, interrupt Rapid Fire at the final channel boundary when fewer than 2 ticks remain, Precise Shots is active, and the GCD is available, then immediately spend Precise Shots so both the second Unload shot and the spender can benefit."
-      status: PROVISIONAL
-      rationale: "SimulationCraft first modeled the delayed consumption, then adopted clipping into the Marksmanship APL, and on 2026-08-16 corrected the rule so clipping is legal only when talent.unload is selected."
-    practical_baseline:
-      action: "Complete Rapid Fire normally, then spend Precise Shots with the appropriate spender."
-      status: STABLE_PRACTICAL
-      rationale: "Current public practical guides still describe the normal full-channel flow and do not document deliberate final-boundary Rapid Fire clipping."
+  rapid_fire_clipping_context_split:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    supersedes: "The earlier universal Unload final-boundary clipping branch that also applied on single-target."
+    single_target:
+      action: "Do not deliberately clip Rapid Fire on single-target. Complete the channel unless a separate encounter/survival override applies."
+      rationale: "SimC commit a011ae4 removes interrupt_if from both Dark Ranger ST and Sentinel ST Rapid Fire. Current Icy Veins 12.1 guidance likewise says Rapid Fire on cooldown on ST and only documents deliberate clipping in the AoE priority."
+      cast_policy: MUST_COMPLETE
+    aoe:
+      action: "With Unload talented, deliberate final-boundary Rapid Fire clipping remains active in the AoE lists when fewer than 2 ticks remain, Precise Shots is active, and the GCD is ready. Follow with the legal Multi-Shot/Precise Shots spender according to the AoE branch."
+      rationale: "The same SimC update explicitly keeps the interrupt_if branch in Sentinel AoE, and Icy Veins 12.1 documents clipping the end of Rapid Fire with Multi-Shot in AoE."
+      cast_policy: "CAN_CLIP_IF(aoe_context AND unload_talented AND ticks_remain < 2 AND precise_shots_up AND gcd_ready AND valid_aoe_precise_shots_spender)"
+    safeguards:
+      - "Never infer that an optimization proven in AoE should also run on ST."
+      - "Do not clip earlier than the final channel boundary."
+      - "If target count falls to one during the channel, default back to MUST_COMPLETE unless the runtime can prove the AoE clipping event remains net-positive."
+
+  single_target_precise_shots_before_rapid_fire:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    behavior: "On Sentinel ST with Unload + No Scope, Rapid Fire may be cast while Precise Shots is already active instead of always spending that Precise Shots first."
+    simc_condition: "rapid_fire,if=buff.precise_shots.up&talent.unload&talent.no_scope appears ahead of the normal Kill Shot / Multi-Shot / Arcane Shot Precise Shots spenders in the 2026-08-22 Sentinel ST APL."
+    interpretation: "Do not globally enforce 'every Precise Shots must be spent before Rapid Fire' on this talent combination. Rapid Fire is allowed to consume/sequence the existing state through Unload/No Scope mechanics."
     automation:
-      cast_policy: "CAN_CLIP_IF(unload_talented AND ticks_remain < 2 AND precise_shots_up AND gcd_ready AND valid_precise_shots_spender AND no_higher_priority_interrupt_risk)"
-      safeguards:
-        - "Without Unload talented, Rapid Fire is MUST_COMPLETE unless a separate encounter/survival override applies."
-        - "Do not clip earlier than the final channel boundary."
-        - "Do not treat Precise Shots as a generic Rapid Fire interrupt condition."
-        - "Disable this optimization if Blizzard fixes the delayed-consumption interaction."
+      gate: "single_target AND sentinel AND unload_talented AND no_scope_talented AND precise_shots_up AND rapid_fire_ready"
+      safeguard: "This is a talent-specific ST admission rule, not a generic reason to overcap Precise Shots in other builds."
 
   precise_shots_two_target_split:
     status: PROVISIONAL
     condition: "Aspect of the Hydra talented and active_enemies >= 2"
     raid_or_non_priority_context:
       action: "Prefer Multi-Shot over Arcane Shot as the Precise Shots spender on exactly 2 targets when not in a DungeonRoute priority-target context."
-      rationale: "SimC commit 2d51405 explicitly changes 2-target raid/non-DungeonRoute behavior to Multi-Shot to maximize total 2-target damage."
     dungeonroute_priority_target_context:
       action: "On exactly 2 targets, prefer Arcane Shot for Precise Shots when DungeonRoute priority damage is active; Multi-Shot becomes allowed again at 3+ targets."
-      rationale: "The new APL preserves M+ priority-target efficiency rather than blindly maximizing 2-target aggregate damage."
     automation:
-      branch_inputs:
-        - active_enemies
-        - fight_style_dungeonroute
-        - max_prio_damage
-        - aspect_of_the_hydra_talented
-        - precise_shots_up
       policy: "if active_enemies == 2 AND dungeonroute AND max_prio_damage => Arcane Shot; otherwise on 2+ eligible targets => Multi-Shot"
+
+  aimed_shot_nameplate_routing:
+    status: PROVISIONAL
+    behavior: "In Sentinel AoE, the 2026-08-22 APL removes max_prio_damage from the Aimed Shot target_if gate and still prefers the target with Sentinel's Mark up."
+    implication: "Nameplate-hunting for the marked Aimed Shot target can remain worthwhile in DungeonRoute even when it costs some immediate priority-target damage."
+    automation:
+      target_policy: "For Sentinel AoE Aimed Shot with Trick Shots remaining long enough for the cast, prefer Sentinel's Mark-up target; do not force current max-priority target solely because max_prio_damage is enabled."
+      safeguard: "Encounter overrides may still pin a must-kill target when failure cost exceeds the modeled aggregate gain."
 
   explosive_shot_priority_routing:
     status: PROVISIONAL
     season2_4pc_multidot:
       action: "Allow Explosive Shot target-cycling/multidotting with the Season 2 4pc only when not in a DungeonRoute max-priority-damage context."
       priority_target_exception: "In DungeonRoute priority-target situations, do not cycle Explosive Shot across secondary targets solely for the 4pc; keep the normal priority-target Explosive Shot action instead."
-      rationale: "SimC commit 2d51405 removes Explosive Shot multidotting in priority-target DungeonRoute situations."
-    automation:
-      gate: "mid2_4pc AND active_enemies > 1 AND (NOT max_prio_damage OR NOT dungeonroute) AND tactical_reload_lock_and_load_gate"
 
   aoe_focus_dump:
     status: PROVISIONAL
-    action: "In Dark Ranger/Sentinel AoE lists, use Multi-Shot as a Focus dump before Steady Shot when enough Focus remains to pay Multi-Shot and still reserve the cost of an Aimed Shot, under the max-priority-damage branch."
-    admission: "focus > multishot_cost + aimed_shot_cost AND max_prio_damage"
-    purpose: "Avoid unnecessary Focus overcap while preserving the next Aimed Shot."
-    automation:
-      state_inputs:
-        - focus
-        - multishot_cost
-        - aimed_shot_cost
-        - max_prio_damage
-      policy: "dump only above the reserve threshold; never spend the Aimed Shot reserve"
+    action: "Use Multi-Shot as a Focus dump before Steady Shot only when enough Focus remains to reserve the next Aimed Shot cost and the applicable damage-objective branch allows it."
+    safeguard: "Never spend the Aimed Shot reserve."
 
   trueshot_explosive_shot_alignment:
     status: PROVISIONAL
-    action: "Outside opener/end-of-fight overrides, delay Trueshot by up to roughly 15 seconds when Explosive Shot will become available within that window, so the two can be aligned."
-    simc_condition: "Trueshot ready remains false unless Explosive Shot is ready or its cooldown remains is at least 15 seconds; fight-remains and early-fight overrides still bypass the hold."
-    practical_conflict: "Current public Wowhead guidance still generally recommends activating Trueshot when it naturally lines up before Aimed Shot / after Rapid Fire, and does not yet document a 15-second Explosive Shot hold."
-    automation:
-      admission: "allow_trueshot_if(explosive_shot_ready OR explosive_shot_cd >= 15s OR opener_override OR execute/fight_end_override OR non_bullseye_build)"
-      safeguard: "Do not convert this into a universal 15-second hard hold; DungeonRoute pull timing, imminent downtime, and fight-end logic must override."
+    action: "Outside opener/end-of-fight overrides, allow a configurable Trueshot delay of up to roughly 15 seconds when Explosive Shot will become available inside that window."
+    safeguard: "Do not convert this into a universal hard hold; DungeonRoute pull timing, imminent downtime, and losing a full Trueshot use override the alignment."
 
   rapid_fire_two_target_targeting:
     status: PROVISIONAL
     action: "On pure non-DungeonRoute 2-target encounters, Rapid Fire may target-swap to the target without Sentinel's Mark to improve aggregate damage; do not use this routing in DungeonRoute priority-damage contexts."
-    rationale: "SimC commit 7ba3610 adds a target_if Rapid Fire line only when !fight_style.dungeonroute and explicitly notes priority-damage loss in DungeonRoute."
-    automation:
-      gate: "active_enemies == 2 AND NOT dungeonroute AND aggregate_damage_objective"
-      target_policy: "prefer target with Sentinel's Mark down when the pure-2T aggregate branch is active; otherwise keep priority-target routing"
 
   hydra_rapid_fire_tick_behavior:
     status: PROVISIONAL_HIGH_CONFIDENCE
-    behavior: "With Aspect of the Hydra, the secondary-target Rapid Fire copy now triggers on every Rapid Fire channel tick in the current SimC live model; the previous 2026-08-14 bugs-mode assumption that Hydra fired only on every other tick has been removed."
-    impact:
-      - "This materially raises the modeled value of Rapid Fire in Hydra cleave and makes secondary-target routing more important in 2-target/low-target aggregate-damage scenarios."
-      - "It does not by itself prove a new GCD priority order; the existing Rapid Fire, Precise Shots, Trueshot and priority-target branches remain in force until live logs/theorycraft show a rotation rewrite is warranted."
-      - "Because Rapid Fire contributes more complete Hydra replication than the old every-other-tick model, do not use the superseded half-frequency assumption in damage forecasting or target-selection heuristics."
-    practical_context: "Current Wowhead Midnight guidance already treats Aspect of the Hydra as a powerful 2-target cleave option and states that Hydra-based AoE follows the single-target priority naturally, but public guides do not document the now-removed every-other-tick bug model."
+    behavior: "With Aspect of the Hydra, the secondary-target Rapid Fire copy triggers on every Rapid Fire channel tick in the corrected current live model; do not use the superseded alternating-tick assumption."
     automation:
-      damage_model: "When Aspect of the Hydra is active, account for a Hydra secondary event on every Rapid Fire tick rather than alternating ticks."
-      target_policy: "Keep TOTAL_DAMAGE versus PRIORITY_TARGET routing explicit; increased Hydra replication is not permission to swap off a dangerous priority target in M+."
-      clipping_safeguard: "Do not change the Unload final-boundary clipping admission solely because Hydra now fires every tick; validate the final tick and Hydra secondary event under live latency before promoting clipping to production."
+      damage_model: "Account for a Hydra secondary event on every Rapid Fire tick."
+      target_policy: "Keep TOTAL_DAMAGE versus PRIORITY_TARGET routing explicit."
 
 evidence:
   simc:
-    mechanic_commit: 94f7e089da69c54b46d40a7a553e81f15334d4c7
-    clipping_apl_commit: 6cad47161bcb93bbe2af1125d5d753483982143c
-    two_target_and_explosive_commit: 2d5140581e40461370d2a47070b838b5c756dc7a
-    unload_gate_correction_commit: bf3ef4410b6adf75fb77d05d8827205cc85e9656
-    aoe_focus_dump_commit: ecf37b9f753023234ba9c29e5986d4814b5eeaf9
-    trueshot_and_rapid_fire_routing_commit: 7ba36108b440c4196a03d4ed0712c0b509ecdb28
-    hydra_rapid_fire_tick_commit: 48bf7e85fa6832a0c276bb26c0f00a67bdd817ae
-    latest_date: 2026-08-20
-    summary: "Latest MM modeling now removes the old Aspect of the Hydra every-other-Rapid-Fire-tick bug assumption: Hydra's secondary Rapid Fire event triggers on every channel tick. Existing raid-vs-DungeonRoute priority splits, Unload clipping gate, Focus reserve, Trueshot/Explosive alignment and pure-2T routing remain otherwise unchanged."
+    latest_apl_commit: a011ae422a21b9269a062c23c019c2996e1daa21
+    latest_apl_date: 2026-08-22
+    summary: "MM APL now removes deliberate Rapid Fire clipping on single-target, retains final-boundary clipping on AoE, allows Sentinel ST Rapid Fire before spending an existing Precise Shots state with Unload+No Scope, and removes the max-prio gate from Sentinel AoE Aimed Shot nameplate routing."
   practical:
-    wowhead:
-      summary: "Current public Marksmanship guidance treats Aspect of the Hydra as a strong 2-target cleave talent and says Hydra-based AoE naturally follows the single-target priority, but does not document an every-other-tick restriction; this is directionally consistent with the corrected full-tick model."
     icy_veins:
-      summary: "No newer public practical source found in this check that documents a different Rapid Fire/Hydra tick cadence or requires a GCD-priority rewrite."
+      date_context: 2026-08-2026_12.1
+      summary: "Current 12.1 rotation lists Rapid Fire on cooldown on ST, while the AoE section explicitly tells players to clip the end of Rapid Fire with Multi-Shot. It also keeps priority-target exceptions for Precise Shots spending. This strongly supports the ST/AoE clipping split."
+    wowhead:
+      summary: "Current ability guide describes Rapid Fire as a core on-cooldown ability and No Scope/Unload/Precise Shots interactions, but does not provide stronger evidence for ST clipping than the newer SimC + Icy Veins split."
   official:
-    summary: "Blizzard's current public 12.1 notes describe Aspect of the Hydra as a cleave mechanic and update which abilities it includes, but do not specify a player-facing every-other-tick Rapid Fire restriction."
+    summary: "Patch 12.1 design heavily raises Rapid Fire value and preserves Deathblow/Unload interactions; no official note instructs players to deliberately clip Rapid Fire on single-target."
 confidence:
-  simc_theoretical_branch: HIGH
+  single_target_no_clip: HIGH_SIMC_AND_PRACTICAL
+  aoe_final_boundary_clip: HIGH_SIMC_AND_PRACTICAL
+  sentinel_st_rapid_fire_into_precise_shots: HIGH_SIMC_PROVISIONAL_PRACTICAL
+  aimed_shot_nameplate_hunting_in_dungeonroute: HIGH_SIMC_PROVISIONAL_PRACTICAL
   two_target_raid_vs_dungeonroute_split: HIGH_SIMC_PROVISIONAL_PRACTICAL
-  unload_clip_requires_unload: HIGH
-  aoe_focus_reserve_rule: HIGH_SIMC_PROVISIONAL_PRACTICAL
-  trueshot_explosive_alignment: HIGH_SIMC_PROVISIONAL_PRACTICAL
-  pure_two_target_rapid_fire_swap: HIGH_SIMC_PROVISIONAL_PRACTICAL
   hydra_rapid_fire_every_tick: HIGH_SIMC_PROVISIONAL_LIVE
-  live_log_validation: PENDING_SEASON2
 production_recommendation:
   stable_practical:
-    - "Do not clip Rapid Fire without Unload."
+    - "Single-target Rapid Fire: complete the channel; remove deliberate Unload clipping from production ST logic."
+    - "AoE Rapid Fire: allow final-boundary Multi-Shot clipping only with the proven Unload/Precise Shots/GCD conditions."
+    - "Keep priority-target exceptions for Precise Shots spending."
     - "Preserve Aimed Shot Focus reserve before low-priority AoE dumps."
-    - "Do not target-swap Rapid Fire in DungeonRoute priority-damage contexts solely for aggregate 2T gain."
-    - "Do not model Aspect of the Hydra Rapid Fire as only firing on alternating channel ticks."
   provisional_machine_logic:
-    - "Use explicit raid-vs-DungeonRoute priority branches for exactly 2 targets."
-    - "Suppress Explosive Shot multidot cycling in DungeonRoute priority-target mode."
-    - "Enable final-boundary Rapid Fire clipping only for Unload builds after latency-safe live validation."
-    - "Allow a configurable Trueshot hold up to ~15s for Explosive Shot alignment outside opener/fight-end/route overrides."
-    - "Enable Sentinel pure-2T Rapid Fire target swapping only for aggregate-damage objectives outside DungeonRoute."
-    - "For Hydra builds, include a secondary Hydra Rapid Fire event for every channel tick in damage/target forecasting."
+    - "Allow Sentinel ST Rapid Fire before consuming existing Precise Shots only for Unload + No Scope."
+    - "Allow Sentinel AoE Aimed Shot nameplate-hunting for Sentinel's Mark even in DungeonRoute, with encounter must-kill override."
+    - "Use explicit TOTAL_DAMAGE versus PRIORITY_TARGET branches for exactly 2 targets."
+    - "Keep Hydra every-tick secondary-event modeling."
 live_verify:
-  - "Season 2 live data is now available but still early; compare Hydra Rapid Fire secondary-event counts against primary Rapid Fire ticks in current 12.1 logs."
-  - "Compare 2T Rapid Fire target distribution in raid cleave versus M+ priority-target pulls."
-  - "Validate whether high-end players actually hold Trueshot for Explosive Shot by 5-15 seconds and under which fight-length / Bullseye states."
-  - "Validate AoE Focus-dump frequency and whether the reserve rule ever delays Aimed Shot under realistic movement/latency."
-  - "Validate Rapid Fire clip safety only in Unload builds and confirm no lost final tick/Hydra/Unload event."
+  - "Compare current 12.1 ST logs for deliberate Rapid Fire early termination; expectation after this update is that systematic ST clipping should disappear."
+  - "Compare AoE logs for Multi-Shot casts at the final Rapid Fire boundary and measure lost final ticks versus gained Precise Shots value."
+  - "Validate Sentinel ST sequences where Rapid Fire is cast while Precise Shots is already active with Unload + No Scope."
+  - "Validate DungeonRoute Aimed Shot target swaps toward Sentinel's Mark targets and quantify priority-target loss versus aggregate gain."
