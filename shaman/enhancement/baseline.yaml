@@ -1,6 +1,6 @@
 spec: Enhancement Shaman
 version: 12.1
-updated: 2026-08-18
+updated: 2026-08-24
 status: PROVISIONAL
 scope:
   hero_talents:
@@ -10,6 +10,7 @@ scope:
     - Thorim's Invocation during Doom Winds / Ascendance
     - Thunder Capacitor Maelstrom Weapon refunds
     - Tempest refund behavior
+    - Precombat Crash Lightning buff setup
 rules:
   thorims_invocation_activation:
     status: HIGH_CONFIDENCE_MECHANIC
@@ -44,34 +45,62 @@ rules:
     refund_exception:
       action: "If Thunder Capacitor refunds the spent Maelstrom, the next-state calculation must use the refunded resource immediately; this can raise overcap risk but does not by itself justify breaking the core activator priority."
 
+  precombat_crash_lightning:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    behavior: "Crash Lightning can be used before combat to begin the pull with the Crash Lightning buff already active without dealing damage or starting combat; current high-end 12.1 guidance explicitly uses a ~1 second pre-cast in major Stormbringer openers and selected Totemic single-target openers."
+    simc_model:
+      action: "Use the dedicated precombat Crash Lightning state rather than treating it as a normal harmful cast."
+      semantics:
+        - "Precombat execution triggers the Crash Lightning buff."
+        - "It does not create Crash Lightning puddles or initiate combat."
+        - "The buff begins with duration reduced by the pre-pull offset."
+        - "No hit-dependent procs, Maelstrom spend, Windfury-style impact callbacks, or target-hit side effects should fire from the no-target precombat event."
+    practical:
+      stormbringer_st: "Pre-cast Crash Lightning roughly 1 second before pull when the encounter allows a clean pre-pull action; then proceed into the normal Voltaic Blaze / Stormstrike / Ascendance sequence."
+      stormbringer_aoe: "Same pre-pull Crash Lightning setup is supported when the opening pack is already in position and the cast will not accidentally engage early."
+      totemic_st: "Current Wowhead 12.1 sample sequence also uses the pre-cast in single target."
+      totemic_aoe: "Do not universalize the pre-cast: the current published Totemic AoE sample sequence does not require it, so keep this branch encounter/build configurable."
+    automation:
+      phase: PREPULL_PREPARATION
+      gate: "pull_timer_valid AND crash_lightning_ready AND precombat_context_allowed"
+      preferred_offset: "~1.0s before pull; configurable and latency-aware"
+      execution_policy: "Fire once in pre-pull only. Do not allow the normal combat Crash Lightning handler to double-submit the same setup cast."
+      pull_safety: "Disable when pre-pull spell execution could body-pull, break encounter scripting, or when the runtime cannot reliably distinguish harmless precombat state from a real harmful cast."
+      first_combat_tick: "Re-read Crash Lightning buff remains and cooldown at combat start; never assume the pre-cast succeeded solely from a submitted action."
+
 practical_comparison:
   simc_theoretical:
-    summary: "The latest SimC engine corrections increase the fidelity of Enhancement resource flow by allowing Ascendance Crash Lightning to trigger Thorim's Invocation and by allowing Tempest to refund consumed Maelstrom through Thunder Capacitor."
+    summary: "The latest SimC engine corrections increase the fidelity of Enhancement resource flow by allowing Ascendance Crash Lightning to trigger Thorim's Invocation, by allowing Tempest to refund consumed Maelstrom through Thunder Capacitor, and now by modeling the pre-pull Crash Lightning buff setup without fake combat-side effects."
   high_end_practical:
-    summary: "Current Wowhead 12.1 guidance already recommends using Crash Lightning/Windstrike during Ascendance and relying on Thorim's Invocation instead of manually spending; it also warns that Thunder Capacitor/Supercharge refunds can create unavoidable Maelstrom overcap pressure. Therefore these SimC changes mostly correct the benchmark model rather than invent a new player-facing priority list."
+    summary: "Current Wowhead 12.1 opener guidance explicitly includes a roughly 1-second pre-cast Crash Lightning in Stormbringer single-target/AoE and selected Totemic single-target sequences. This gives the opener an already-active Crash Lightning buff without spending the first combat GCD on setup."
   stable_player:
-    summary: "Do not add extra manual spenders inside Ascendance/Doom Winds solely because Maelstrom is high; keep using the prescribed activators and accept some refund-driven overcap when no higher-value drain exists."
+    summary: "If a clean pull timer is available, pre-cast Crash Lightning about one second before combat. If the pull is messy or the cast risks early engagement, skip it rather than desynchronizing the opener. Inside Ascendance/Doom Winds, keep the corrected Thorim/Thunder Capacitor resource model."
   encounter_specific:
-    summary: "No boss/M+ exception is established by these commits. Encounter routing may still override cooldown usage, but the Thorim/Thunder Capacitor mechanics themselves are build-state mechanics rather than encounter-specific tactics."
+    summary: "Pre-pull Crash Lightning is encounter- and routing-sensitive. It is valuable on controlled raid pulls and prepared M+ starts, but should not be forced on chain-pulls, accidental-combat situations, or Totemic AoE routes where the published opener does not depend on it."
 
 evidence:
   simc:
     crash_lightning_thorim_commit: 351fcec671c8c88b9fc042244fc9e6532a3074ba
     thunder_capacitor_zero_spend_commit: 96ddc9b5f53bdc46890eb58afc0f2371086aa8a3
     tempest_refund_commit: 76042c6127cf0ac8f8a3cc12847f921f8c4b1dc1
-    latest_date: 2026-08-17
+    precombat_crash_lightning_commit: e6f5b00266c5591c26ffb72ffc1fc82d6935f9e1
+    latest_date: 2026-08-23
   practical:
     wowhead:
-      summary: "Current Midnight Enhancement rotation guidance states that Thorim's Invocation operates during both Ascendance and Doom Winds; Crash Lightning is a priority activator, and Stormbringer Ascendance can suffer Maelstrom overcap from Thunder Capacitor/Supercharge refunds with no faster drain available."
+      summary: "Current Midnight Enhancement opener guidance explicitly lists Pre-cast Crash Lightning 1 second before pulling for Stormbringer single-target and AoE sequences and for the published Totemic single-target sequence; the Totemic AoE sample does not require it."
+    method:
+      summary: "Current Method 12.1 guide confirms Crash Lightning remains a top-priority Stormbringer action and Season 2 strongly favors Stormbringer after acquiring the new tier set, supporting the value of beginning the opener with its state pre-established."
   official:
-    summary: "Blizzard's Midnight class notes define Thorim's Invocation as active during Ascendance or Doom Winds and describe Stormstrike/Crash Lightning as automatic Maelstrom spend activators."
+    summary: "No Blizzard note was found that turns the pre-pull technique into a mandatory universal opener; treat the exact pre-pull timing as practical/SimC-supported rather than an official rotation mandate."
 confidence:
   thorims_invocation_ascendance_crash_lightning: HIGH
   thunder_capacitor_tempest_refund: HIGH
   resource_overcap_policy: HIGH_PRACTICAL
+  precombat_crash_lightning_state: HIGH
+  universal_precast_across_all_builds_and_routes: LOW
   core_priority_rewrite_required: false
 production_recommendation:
-  - "Keep the current high-end Ascendance/Doom Winds activator priority; these commits are primarily a benchmark/runtime-model correction."
-  - "Runtime must refresh Maelstrom immediately after each Thorim's Invocation spender because Thunder Capacitor may refund the resource."
-  - "Do not model Tempest as ineligible for Thunder Capacitor when it actually consumed Maelstrom."
-  - "Do not create a refund from zero-spend casts."
+  - "Add PREPULL_PREPARATION support for a single Crash Lightning approximately 1 second before controlled pulls."
+  - "At combat start, verify the real Crash Lightning buff/cooldown state before entering the opener."
+  - "Keep the pre-cast conditional by hero/build/encounter; do not force it on every Totemic AoE or chain-pull situation."
+  - "Keep the current high-end Ascendance/Doom Winds activator priority and corrected Thorim/Thunder Capacitor resource model."
