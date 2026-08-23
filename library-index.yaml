@@ -1,6 +1,6 @@
 project: 魔兽循环
 wow_version: "12.1 / Midnight"
-updated: 2026-08-23
+updated: 2026-08-24
 specs:
   rogue:
     assassination: rogue/assassination/baseline.yaml
@@ -22,6 +22,7 @@ specs:
   warrior:
     arms: warrior/arms/baseline.yaml
   hunter:
+    beast_mastery: hunter/beast-mastery/baseline.yaml
     marksmanship: hunter/marksmanship/baseline.yaml
   demon_hunter:
     havoc: demon-hunter/havoc/baseline.yaml
