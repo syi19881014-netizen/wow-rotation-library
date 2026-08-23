@@ -1,0 +1,95 @@
+spec: Beast Mastery Hunter
+wow_version: "12.1 / Midnight"
+updated: 2026-08-24
+status: PROVISIONAL_HIGH_CONFIDENCE
+
+scope:
+  focus: "AoE Beast Cleave / Wild Thrash / Bestial Wrath / Apex pet timing"
+  priority_rewrite_required: true
+  applies_when:
+    - "talent.beast_cleave"
+    - "multi_target"
+
+source_evidence:
+  simulationcraft:
+    commit: "5d55482c9819b276a3d59880ca5d9996abf7eefa"
+    date_utc: "2026-08-23"
+    finding: >-
+      AoE APL now holds Wild Thrash when Bestial Wrath will become ready before
+      Beast Cleave expires, then forces Wild Thrash immediately after Bestial
+      Wrath when available. SimC notes the Apex pet uses Bestial Wrath about
+      1.5s after the player's main pets and does not inherit the pre-existing
+      Beast Cleave buff.
+  practical:
+    method_12_1:
+      updated: "2026-08-17"
+      finding: >-
+        Method independently recommends Wild Thrash two globals before Bestial
+        Wrath when possible, then Wild Thrash as the first global after Bestial
+        Wrath so the Apex pet receives Beast Cleave before its delayed Bestial
+        Wrath damage event.
+    wowhead_12_1:
+      finding: >-
+        Current public AoE priority still presents Wild Thrash before Bestial
+        Wrath in a simpler priority list; treat this as a stable human-facing
+        approximation rather than the full Apex timing state machine.
+
+states:
+  AOE_BEAST_CLEAVE:
+    inputs:
+      - beast_cleave_remains
+      - bestial_wrath_remains
+      - wild_thrash_ready
+      - previous_gcd
+      - apex_pet_expected_event
+    rules:
+      - id: FORCE_POST_BW_WILD_THRASH
+        status: PROVISIONAL_HIGH_CONFIDENCE
+        when: "wild_thrash_ready AND previous_gcd == bestial_wrath"
+        action: "Wild Thrash"
+        rationale: >-
+          Reapply Beast Cleave after Bestial Wrath so the newly spawned Apex pet
+          has Beast Cleave before its delayed Bestial Wrath event.
+      - id: HOLD_WILD_THRASH_FOR_BW
+        status: PROVISIONAL_HIGH_CONFIDENCE
+        when: >-
+          wild_thrash_ready AND beast_cleave_active AND
+          bestial_wrath_remains <= beast_cleave_remains
+        action: "hold Wild Thrash briefly for Bestial Wrath"
+        max_hold: "approximately 2s in the current SimC optimization context"
+        safeguard: >-
+          Never let Beast Cleave fall off merely to wait for Bestial Wrath;
+          if Beast Cleave is absent, Wild Thrash is immediately admitted.
+      - id: BEAST_CLEAVE_DOWN
+        status: STABLE
+        when: "NOT beast_cleave_active AND wild_thrash_ready"
+        action: "Wild Thrash"
+
+execution_policy:
+  ordering: >-
+    State sensing -> Beast Cleave maintenance -> Bestial Wrath admission ->
+    post-Bestial-Wrath Wild Thrash -> normal AoE priority.
+  forbidden_simplifications:
+    - "Do not use Wild Thrash strictly on cooldown in every AoE state."
+    - "Do not cast Bestial Wrath with Beast Cleave down when Wild Thrash can establish it."
+    - "Do not assume the Apex pet inherits Beast Cleave that existed before Bestial Wrath."
+
+scenario_guidance:
+  simc_theoretical: >-
+    Use the explicit Wild Thrash hold/force rules above; this is the current
+    benchmark branch for Beast Cleave + Apex timing.
+  high_end_practical: >-
+    Method's current 12.1 advice strongly agrees with the same timing idea:
+    line up Wild Thrash around Bestial Wrath and make Wild Thrash the first GCD
+    after Bestial Wrath whenever possible.
+  stable_human: >-
+    Keep Beast Cleave active, do not overcap Barbed Shot, and use Wild Thrash
+    around Bestial Wrath without attempting sub-second hold logic.
+  mplus_overrides:
+    - "Do not hold Wild Thrash if the pack will die before the Apex event matters."
+    - "Priority-target or movement/pet-travel constraints can override aggregate cleave optimization."
+
+live_verify:
+  - "Exact safe hold duration under haste/latency and different GCD lengths."
+  - "WCL frequency of Wild Thrash immediately after Bestial Wrath in top Season 2 M+ and raid AoE samples."
+  - "Whether all Pack Leader/Apex variants share the same practical timing value."
