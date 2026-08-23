@@ -1,0 +1,71 @@
+spec: shadow_priest
+version: "12.1 / Midnight Season 2"
+updated: 2026-08-23
+status: PROVISIONAL
+
+source_of_truth:
+  simc_commit: "924f24376fa051c295290bdad8ebb75b5f4bcd27"
+  simc_change: "[Priest] adjustments to SWM and VB/MB in the APL to be less robot"
+  practical_guides:
+    - "Method Shadow Priest Midnight 12.1, updated 2026-08-11"
+    - "Wowhead Shadow Priest Rotation Guide 12.1, updated 2026-08-12"
+  live_evidence:
+    - "Season 2 WCL is live, but exact 2-GCD hold thresholds are not yet treated as log-validated production constants."
+
+core_principles:
+  - "Maintain Vampiric Touch on worthwhile targets; use Tentacle Slam for coverage/charge protection."
+  - "Maintain Shadow Word: Madness and prevent Insanity overcap."
+  - "Voidweaver: Void Torrent establishes Entropic Rift; Void Blast is a high-value Rift action."
+  - "Do not flatten Archon and Voidweaver into one priority list."
+
+automation_architecture:
+  order:
+    - DOT_STATE
+    - HERO_STATE
+    - VOIDFORM_STATE
+    - ENTROPIC_RIFT_STATE
+    - SHADOW_WORD_MADNESS_STATE
+    - TENTACLE_SLAM_CHARGE_STATE
+    - VOID_TORRENT_ADMISSION
+    - VOID_BLAST_MIND_BLAST_ADMISSION
+    - FILLER
+
+season2_refinement_2026_08_23:
+  status: PROVISIONAL_HIGH_CONFIDENCE
+  shadow_word_madness_targeting:
+    rule: "Target selection may treat SW:M as imminently expiring at roughly <=2 GCD for practical routing, while the actual cast admission still prioritizes true expiry, overcap prevention, procs, Rift/Voidform state, short target life and multi-target pressure."
+    automation_note: "Separate target-selection horizon from cast-admission horizon; do not cast early merely because a secondary target entered the 2-GCD targeting window."
+  tentacle_slam:
+    rule: "Move charge-cap / VT-refresh Tentacle Slam ahead of Void Torrent when its refresh/charge conditions are met."
+    safeguards:
+      - "Preserve charges for near-future adds when the encounter model says they matter more."
+      - "Do not refresh DoTs on targets with insufficient remaining life."
+  voidweaver_void_blast_mind_blast:
+    rule: "Void Blast is evaluated before ordinary Mind Blast once the higher-priority Void Torrent/Tentacle Slam decisions are resolved."
+    mind_blast_hold: "With Void Blast + Thought Harvester, ordinary Mind Blast can be suppressed when Void Torrent is expected within about 2 GCD and dots are ready, unless Tentacle Slam is being held or other gate conditions invalidate the setup."
+    automation_note: "This is a short predictive hold, not a generic Mind Blast delay. Keep the ~2-GCD threshold configurable until live sequence evidence is stronger."
+
+simc_vs_practical:
+  simc:
+    - "Uses tighter predictive conditions around SW:M target routing and Mind Blast before Void Torrent."
+    - "Optimizes exact state timing with perfect cooldown/DoT knowledge."
+  high_end_practical:
+    - "Method and Wowhead agree on the broad Voidweaver flow: maintain DoTs/SW:M, use Void Torrent to open Entropic Rift, prioritize Void Blast during the Rift, then Mind Blast."
+    - "Exact predictive 2-GCD holds should remain flexible around movement, target death and add timing."
+  stable_player:
+    - "Do not intentionally sit on Mind Blast unless playing the specific Voidweaver/Thought Harvester setup and Void Torrent is genuinely imminent."
+  encounter_override:
+    - "Movement, imminent target death, add spawns and forced downtime may override predictive holds."
+
+production_recommendation:
+  priority_rewrite_required: true
+  classification: "target-selection and short-hold refinement, not a wholesale spec rewrite"
+  stable:
+    - "DoTs/SW:M resource framework"
+    - "Void Torrent -> Entropic Rift -> Void Blast practical flow"
+  provisional:
+    - "SW:M ~2-GCD target-selection horizon"
+    - "Mind Blast short hold before imminent Void Torrent with Void Blast + Thought Harvester"
+  live_verify:
+    - "Exact 2-GCD threshold under real haste/latency"
+    - "Boss/M+ cases where spending Mind Blast immediately beats the modeled hold"
