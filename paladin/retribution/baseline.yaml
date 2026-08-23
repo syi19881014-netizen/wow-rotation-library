@@ -1,20 +1,23 @@
 spec: retribution_paladin
 wow_version: "12.1 / Midnight"
-updated: 2026-08-19
+updated: 2026-08-23
 status: PROVISIONAL
 
 source_of_truth:
-  simc_commit: 90b50481628cdb16334829319b992eaed459ce98
-  simc_date_utc: 2026-08-18
+  simc_commit: e4fda8cc0de6415e65c1eb54433938db5442b7da
+  simc_date_utc: 2026-08-22
   public_guides:
     - source: Wowhead Retribution Paladin Rotation Guide
-      state: "public guide still mostly pre-12.1 detail; confirms Holy Power economy, proc management and Divine Storm as the multi-target spender"
+      state: "12.1 guide updated 2026-08-17; recommends stacking Crusade quickly, but still puts Execution Sentence/cooldown value ahead of blindly rushing stacks; Hammer of Light should normally follow Wake of Ashes immediately"
+    - source: Method Retribution Paladin 12.1 Rotation Guide
+      state: "12.1 guide updated 2026-08-12; Templar opener uses Wake of Ashes -> Hammer of Light and describes Crusade as a Holy-Power-spend ramp during Avenging Wrath"
 
 material_update:
   summary:
-    - "Divine Storm admission is rewritten: generic 2+ target use is now explicit, with additional Divine Arbiter / Empyrean Power / Seal of the Templar / Dawnlight state gates."
-    - "Blade of Justice proc protection now reacts to 2 stacks of Art of War or Righteous Cause rather than spending immediately on any single proc."
-    - "The old special early Blade of Justice line used only to establish Expurgation in the first 5 seconds is removed."
+    - "Divine Storm admission remains explicit on generic 2+ targets, with additional Divine Arbiter / Empyrean Power / Seal of the Templar / Dawnlight state gates."
+    - "Blade of Justice proc protection remains a 2-stack Art of War / Righteous Cause overcap rule rather than a single-proc force-cast."
+    - "NEW 2026-08-22 live-bug model: when Crusade is active, Hammer of Light is observed/modelled by SimC bugs mode as granting 9 Crusade stacks, independent of its current 3 Holy Power cost."
+    - "The 9-stack behavior is not treated as intended design or a permanent rotation law; it is isolated as a LIVE_BUG branch because SimC only enables the override when bugs mode is active."
 
 state_machine:
   FINISHER_BRANCH:
@@ -49,17 +52,36 @@ state_machine:
       - when: "only one proc stack is present"
         action: "do not automatically force Blade of Justice above finishers/cooldowns solely for that proc"
 
+  CRUSADE_HAMMER_OF_LIGHT_LIVE_BUG:
+    status: PROVISIONAL_LIVE_BUG
+    inputs:
+      - crusade_talented
+      - avenging_wrath_active
+      - hammer_of_light_cast_success
+      - live_bug_mode
+      - crusade_stacks
+    rules:
+      - when: "crusade_talented and avenging_wrath_active and hammer_of_light_cast_success and live_bug_mode"
+        action: "expect Crusade to jump by 9 stacks after Hammer of Light; immediately refresh the actual Crusade stack count instead of adding Holy Power cost"
+      - when: "live_bug_mode is false or Blizzard fixes the behavior"
+        action: "fall back to intended spend-based Crusade stacking and remove the 9-stack override"
+    safeguards:
+      - "Do not delay Execution Sentence merely to force an earlier 9-stack Hammer of Light; current Wowhead guidance still prioritizes putting Execution Sentence on cooldown before obsessing over Crusade ramp speed."
+      - "Do not assume every Hammer of Light proc should be consumed instantly: existing guide rules still allow holding a free Hammer of Light briefly for Avenging Wrath / Execution Sentence / relevant proc alignment."
+      - "After Hammer of Light, read the live Crusade stack value from the game if the runtime API can do so; do not rely on prediction because this behavior is explicitly bug-scoped."
+
 production_policy:
   simc_benchmark:
-    status: HIGH_CONFIDENCE_THEORY
-    rule: "mirror 90b5048 12.1 finisher and 2-stack proc gates"
+    status: HIGH_CONFIDENCE_THEORY_WITH_LIVE_BUG_BRANCH
+    rule: "mirror current 12.1 finisher/proc gates; when validating against SimC bugs mode, model Hammer of Light as 9 Crusade stacks during active Crusade"
   practical_production:
     status: LIVE_VERIFY
-    rule: "use 2+ target Divine Storm as the default multi-target branch, but keep the new Divine Arbiter/Dawnlight state gates explicit rather than flattening to target count alone"
+    rule: "keep current Templar opener/priority; exploit no special hold beyond existing Wake -> Hammer of Light timing, but refresh Crusade stacks immediately because live behavior may jump by 9"
   stable_human_simplification:
-    rule: "2+ meaningful targets generally Divine Storm; protect Holy Power from overcap; prioritize Blade of Justice more aggressively only when its relevant proc stacks are capped at 2"
+    rule: "2+ meaningful targets generally Divine Storm; protect Holy Power from overcap; prioritize Blade of Justice more aggressively only at 2 proc stacks; with Crusade, use Hammer of Light in its normal high-priority window rather than inventing a separate bug-fishing sequence"
 
 runtime_notes:
   - "Do not encode Divine Storm as a target-count-only switch; the 12.1 APL has state-dependent suppression/admission around Divine Arbiter and Empyrean effects."
   - "Track Art of War / Righteous Cause stack counts, not booleans, for proc-overcap prevention."
+  - "Track Crusade stacks from live aura state after Hammer of Light. SimC commit e4fda8c models 9 stacks only in bugs mode; this can be hotfixed at any time and must remain kill-switchable."
   - "Keep exact 12.1 practical validation PROVISIONAL until current live raid/M+ sequence evidence accumulates."
