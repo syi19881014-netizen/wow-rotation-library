@@ -1,28 +1,109 @@
 spec: Guardian Druid
 version: 12.1
-updated: 2026-08-13
+updated: 2026-08-24
 status: STABLE
 source_notes:
   - "SimulationCraft: Guardian Season 2 APL changes"
+  - "SimulationCraft commit c5eca52 / Dreamgrove b1af759: 2026-08-23 Guardian APL fixes"
+
 GUARDIAN_RAGE_ARBITRATION:
   priority:
     - survival_rage_reserve
+    - gory_fur_free_ironfur
     - ironfur_coverage
     - gory_fur_proc
     - wild_guardian_proc_generation
-    - maul_raze_target_and_build_decision
+    - maul_raze_ravage_target_and_build_decision
     - avoid_thrash_mangle_reset_waste
     - berserk_incarnation_lunar_beam_alignment
+
 survival:
   expected_physical_damage: required_input
   defensive_reserve: required
   forbid_blind_simc_rage_threshold_copy: true
+
+season2_apl_2026_08_23:
+  status: PROVISIONAL_HIGH_CONFIDENCE
+  evidence:
+    simc_commit: c5eca52d53213ee6ab38b4594ef6ec7754f48f21
+    dreamgrove_commit: b1af759
+    notes:
+      - "SimC commit is synchronized from Dreamgrove and changes actual APL execution."
+      - "Current Wowhead/Method 12.1 guidance independently supports the same broad Gory Fur, Thrash/Mangle and rage-spender priorities, but does not publish every exact APL condition."
+
+  gory_fur_ironfur:
+    rule: "If the free-Ironfur Gory Fur proc is active, Ironfur is an immediate off-GCD priority."
+    cast_policy: OFF_GCD
+    production_note: "Do not spend rage to imitate this rule; consume the actual free proc."
+
+  ravage_and_ironfur:
+    rule: "When Killing Blow is selected and Ravage is currently available, do not force the ordinary missing-Ironfur maintenance lines ahead of Ravage."
+    reason: "The Aug-23 APL explicitly adds !buff.ravage.up to those Ironfur coverage branches."
+    safeguard: "Survival overrides still win if incoming physical damage requires Ironfur."
+
+  thrash_maintenance:
+    rule: "Restore refreshable/stack-aware Thrash maintenance instead of relying only on Lunar Calling."
+    stack_targets:
+      flashing_claws_rank_2: 5
+      flashing_claws_rank_1: 4
+      no_flashing_claws: 3
+    automation: "Track current Thrash duration and stacks per target; do not spam Thrash only because Lunar Calling is talented."
+
+  druid_of_the_claw_apex:
+    conditions:
+      - "Fount of Strength talented"
+      - "Answered Calling / apex spirit active"
+    mangle_priority:
+      single_target: true
+      berserk_up_to_4_targets: true
+      additional_high_priority_when:
+        - "Gorestained Claws active"
+        - "Answered Calling active"
+    note: "Mangle rises in priority during the apex-spirit window rather than being treated as a generic filler."
+
+  maul_rage_threshold:
+    branch: "Killing Blow + Answered Calling + no Fount of Strength"
+    old_threshold: 90
+    new_threshold: 80
+    status: LIVE_VERIFY
+    note: "Use as a SimC benchmark threshold; real tank damage intake can require a larger defensive reserve."
+
+  wild_guardian:
+    rule: "Use Wild Guardian only while Lunar Beam is active and Answered Calling / apex spirit is not already active."
+    reason: "The previous Ravage-oriented line could waste Wild Guardian during the apex-spirit window."
+
+  production_order:
+    - survival_override
+    - free_gory_fur_ironfur
+    - ravage_or_required_defensive_ironfur
+    - thrash_refresh_stack_state
+    - apex_mangle_branch
+    - offensive_rage_spender
+    - normal_filler
+
+  runtime_requirements:
+    - "Read Gory Fur free-Ironfur proc separately from rage-paid Ironfur."
+    - "Read Ravage availability before ordinary Ironfur coverage admission."
+    - "Track Thrash refreshability and stack count."
+    - "Track Answered Calling / apex-spirit state before Mangle and Wild Guardian decisions."
+    - "Keep survival reserve above pure DPS APL logic."
+
+  player_facing_priority_rewrite: partial
+  notes:
+    - "This is a real APL correction, not a formatting-only change."
+    - "The largest production changes are proc-aware Ironfur, Ravage-vs-Ironfur admission, restored Thrash maintenance, and apex-spirit Mangle/Wild Guardian handling."
+
 gory_fur:
   bidirectional_resource_proc_loop: true
+  free_ironfur_is_immediate_off_gcd: true
+
 elunes_chosen:
   moonfire_spam_to_reduce_lunar_beam_cd: false
+
 reset_management:
   avoid_thrashing_mangle_ready_when_reset_is_imminent: true
+  apex_spirit_resets_thrash_and_mangle: true
+
 advanced_optional:
   SAFE_CATWEAVE:
     default_enabled: false
