@@ -1,6 +1,6 @@
 spec: Marksmanship Hunter
 version: 12.1
-updated: 2026-08-23
+updated: 2026-08-24
 status: PROVISIONAL
 scope:
   hero_talents:
@@ -18,13 +18,14 @@ scope:
     - 2-target Rapid Fire target routing
     - Aimed Shot nameplate routing
     - Aspect of the Hydra Rapid Fire tick behavior
+    - Moonlight Chakram bounce travel time and Trueshot containment
 rules:
   rapid_fire_clipping_context_split:
     status: PROVISIONAL_HIGH_CONFIDENCE
     supersedes: "The earlier universal Unload final-boundary clipping branch that applied to both single-target and all AoE hero-talent branches."
     single_target:
       action: "Do not deliberately clip Rapid Fire on single-target. Complete the channel unless a separate encounter/survival override applies."
-      rationale: "SimC commit a011ae4 removes interrupt_if from both Dark Ranger ST and Sentinel ST Rapid Fire. Current public guides likewise do not support deliberate ST clipping."
+      rationale: "SimC removed interrupt_if from both Dark Ranger ST and Sentinel ST Rapid Fire."
       cast_policy: MUST_COMPLETE
     aoe:
       sentinel:
@@ -32,9 +33,7 @@ rules:
         cast_policy: "CAN_CLIP_IF(sentinel AND aoe_context AND unload_talented AND ticks_remain < 2 AND precise_shots_up AND gcd_ready AND valid_aoe_precise_shots_spender)"
       dark_ranger:
         action: "Do not deliberately clip Rapid Fire in Dark Ranger AoE; complete the channel by default."
-        rationale: "SimC commit b883647b (2026-08-22 UTC) removes the interrupt_if clause specifically from the Dark Ranger AoE Rapid Fire line while leaving the rest of the AoE priority intact."
         cast_policy: MUST_COMPLETE
-      evidence_conflict: "Icy Veins' 2026-08-13 changelog documents generic AoE Rapid Fire clipping, but the newer SimC Dark Ranger AoE change is hero-specific and authored after that guide update. Treat the generic practical guide as stale for Dark Ranger until it is refreshed or live-log evidence shows otherwise."
     safeguards:
       - "Never infer that an optimization proven for Sentinel AoE should also run for Dark Ranger AoE or single-target."
       - "Do not clip earlier than the final channel boundary."
@@ -43,8 +42,6 @@ rules:
   single_target_precise_shots_before_rapid_fire:
     status: PROVISIONAL_HIGH_CONFIDENCE
     behavior: "On Sentinel ST with Unload + No Scope, Rapid Fire may be cast while Precise Shots is already active instead of always spending that Precise Shots first."
-    simc_condition: "rapid_fire,if=buff.precise_shots.up&talent.unload&talent.no_scope appears ahead of the normal Kill Shot / Multi-Shot / Arcane Shot Precise Shots spenders in the 2026-08-22 Sentinel ST APL."
-    interpretation: "Do not globally enforce 'every Precise Shots must be spent before Rapid Fire' on this talent combination. Rapid Fire is allowed to consume/sequence the existing state through Unload/No Scope mechanics."
     automation:
       gate: "single_target AND sentinel AND unload_talented AND no_scope_talented AND precise_shots_up AND rapid_fire_ready"
       safeguard: "This is a talent-specific ST admission rule, not a generic reason to overcap Precise Shots in other builds."
@@ -61,17 +58,15 @@ rules:
 
   aimed_shot_nameplate_routing:
     status: PROVISIONAL
-    behavior: "In Sentinel AoE, the 2026-08-22 APL removes max_prio_damage from the Aimed Shot target_if gate and still prefers the target with Sentinel's Mark up."
-    implication: "Nameplate-hunting for the marked Aimed Shot target can remain worthwhile in DungeonRoute even when it costs some immediate priority-target damage."
+    behavior: "In Sentinel AoE, prefer the target with Sentinel's Mark for Aimed Shot where the current APL branch allows it; do not universally pin max-priority target solely because DungeonRoute priority damage is enabled."
     automation:
-      target_policy: "For Sentinel AoE Aimed Shot with Trick Shots remaining long enough for the cast, prefer Sentinel's Mark-up target; do not force current max-priority target solely because max_prio_damage is enabled."
-      safeguard: "Encounter overrides may still pin a must-kill target when failure cost exceeds the modeled aggregate gain."
+      safeguard: "Encounter overrides may still pin a must-kill target when failure cost exceeds modeled aggregate gain."
 
   explosive_shot_priority_routing:
     status: PROVISIONAL
     season2_4pc_multidot:
       action: "Allow Explosive Shot target-cycling/multidotting with the Season 2 4pc only when not in a DungeonRoute max-priority-damage context."
-      priority_target_exception: "In DungeonRoute priority-target situations, do not cycle Explosive Shot across secondary targets solely for the 4pc; keep the normal priority-target Explosive Shot action instead."
+      priority_target_exception: "In DungeonRoute priority-target situations, do not cycle Explosive Shot across secondary targets solely for the 4pc."
 
   aoe_focus_dump:
     status: PROVISIONAL
@@ -94,42 +89,65 @@ rules:
       damage_model: "Account for a Hydra secondary event on every Rapid Fire tick."
       target_policy: "Keep TOTAL_DAMAGE versus PRIORITY_TARGET routing explicit."
 
+  moonlight_chakram_trueshot_containment:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    source_commit: 9ad671eaff67a2344a3ec0646f0d7d4a2557cf52
+    source_date: 2026-08-24
+    behavior:
+      single_target: "Model Moonlight Chakram bounces at roughly 640 ms intervals; the full damage sequence is materially slower than previously modeled."
+      multi_target: "Model Moonlight Chakram bounces at roughly 130 ms intervals; multi-target completion is much faster than single-target."
+    apl_change: "In Sentinel ST, the re-use/late-window condition changes from Moonlight Chakram buff remains < one GCD to remains < 5 seconds so the complete bounce sequence lands inside Trueshot."
+    practical_interpretation: "Moonlight Chakram should be treated as a projectile/bounce sequence with future damage events, not as damage fully realized when the button is pressed."
+    automation:
+      state_order:
+        - "TRUESHOT_REMAINS"
+        - "MOONLIGHT_CHAKRAM_BOUNCE_CONTEXT"
+        - "TARGET_COUNT"
+        - "CAST_ADMISSION"
+      single_target_gate: "Do not wait until the final GCD of Trueshot to cast Moonlight Chakram. Reserve enough remaining Trueshot time for the slower ST bounce sequence; SimC currently uses a 5-second buff-remains threshold."
+      aoe_gate: "Do not blindly reuse the ST 5-second threshold for multi-target because the observed bounce interval is much shorter (~130 ms). Keep the target-count/travel model explicit."
+      safeguard: "If runtime cannot observe individual bounce completion, use the theoretical timing only as a configurable admission margin; do not delay a final Moonlight Chakram so long that the cast itself is lost."
+    conflict:
+      practical_guides: "Method 12.1 (updated 2026-08-17) and Wowhead 12.1 (updated 2026-08-15) currently say to use Moonlight Chakram near/end of Trueshot, but predate the 2026-08-24 measured travel-time correction and do not distinguish the ~640 ms ST versus ~130 ms AoE bounce cadence."
+      resolution: "Use the new timing model for the SimC benchmark; keep the exact practical safety margin LIVE_VERIFY until guides/log sequences refresh."
+
 evidence:
   simc:
-    latest_apl_commit: b883647b707e1bdf7300bae5b97a11e6d47a2489
-    latest_apl_date: 2026-08-22
-    summary: "After a011ae4 removed ST clipping while retaining AoE clipping, b883647b removes Rapid Fire interrupt_if specifically from Dark Ranger AoE. Current theoretical clipping is therefore Sentinel-AoE-specific, not generic AoE behavior."
+    latest_apl_commit: 9ad671eaff67a2344a3ec0646f0d7d4a2557cf52
+    latest_apl_date: 2026-08-24
+    summary: "Moonlight Chakram travel/bounce timing was corrected to ~640 ms per bounce on ST and ~130 ms on multi-target, and the Sentinel ST APL now starts the late Trueshot Chakram at <5s remaining rather than waiting until <1 GCD."
   practical:
-    icy_veins:
-      date_context: 2026-08-13_12.1
-      summary: "The guide changelog says AoE Rapid Fire clipping was added generically, but it predates the hero-specific 2026-08-22 Dark Ranger SimC revision. Use it as support for Sentinel AoE clipping, not as decisive evidence for Dark Ranger."
+    method:
+      date_context: 2026-08-17_12.1
+      summary: "Current Sentinel priorities place Moonlight Chakram at the end of Trueshot, but the guide predates the newly measured ST/AoE bounce timing correction."
     wowhead:
-      summary: "Current 12.1 hero-specific priority lists show Rapid Fire with Trick Shots in AoE but do not explicitly document a Dark Ranger clipping requirement. The same guide author maintains the SimC APL, making the newer APL revision especially relevant pending a guide refresh."
+      date_context: 2026-08-15_12.1
+      summary: "Current priority likewise says to cast Moonlight Chakram when Trueshot is about to expire; it does not yet document the 5-second ST containment margin."
   official:
-    summary: "No Blizzard note currently instructs deliberate Rapid Fire clipping; this remains an optimization inferred from class mechanics and current APL/theorycraft evidence rather than an official rotational rule."
+    summary: "No Blizzard rotation note defines an exact Trueshot safety margin for Moonlight Chakram; the current timing is an observed live-mechanic/theorycraft model."
 confidence:
   single_target_no_clip: HIGH_SIMC_AND_PRACTICAL
   sentinel_aoe_final_boundary_clip: HIGH_SIMC_PROVISIONAL_PRACTICAL
   dark_ranger_aoe_no_clip: HIGH_SIMC_PROVISIONAL_LIVE
   sentinel_st_rapid_fire_into_precise_shots: HIGH_SIMC_PROVISIONAL_PRACTICAL
-  aimed_shot_nameplate_hunting_in_dungeonroute: HIGH_SIMC_PROVISIONAL_PRACTICAL
   two_target_raid_vs_dungeonroute_split: HIGH_SIMC_PROVISIONAL_PRACTICAL
   hydra_rapid_fire_every_tick: HIGH_SIMC_PROVISIONAL_LIVE
+  moonlight_chakram_travel_model: HIGH_SIMC_MEASURED_PROVISIONAL_LIVE
 production_recommendation:
   stable_practical:
     - "Single-target Rapid Fire: complete the channel for both hero trees."
-    - "Dark Ranger AoE Rapid Fire: complete the channel by default; remove the prior generic clip branch."
+    - "Dark Ranger AoE Rapid Fire: complete the channel by default."
     - "Sentinel AoE Rapid Fire: allow final-boundary Multi-Shot clipping only with Unload/Precise Shots/GCD conditions."
     - "Keep priority-target exceptions for Precise Shots spending."
     - "Preserve Aimed Shot Focus reserve before low-priority AoE dumps."
   provisional_machine_logic:
     - "Gate Rapid Fire clipping by HERO_STATE before evaluating AoE context."
     - "Allow Sentinel ST Rapid Fire before consuming existing Precise Shots only for Unload + No Scope."
-    - "Allow Sentinel AoE Aimed Shot nameplate-hunting for Sentinel's Mark even in DungeonRoute, with encounter must-kill override."
     - "Use explicit TOTAL_DAMAGE versus PRIORITY_TARGET branches for exactly 2 targets."
     - "Keep Hydra every-tick secondary-event modeling."
+    - "For Sentinel ST Trueshot, begin Moonlight Chakram containment planning before the final GCD; current SimC benchmark uses a 5-second remaining threshold because ST bounces are much slower than AoE."
 live_verify:
-  - "Compare current 12.1 Dark Ranger AoE logs for deliberate Rapid Fire early termination after 2026-08-22; expectation is systematic clipping should disappear if the APL change reflects live optimal play."
-  - "Compare Sentinel AoE logs for Multi-Shot casts at the final Rapid Fire boundary and measure lost final ticks versus gained Precise Shots value."
-  - "Validate Sentinel ST sequences where Rapid Fire is cast while Precise Shots is already active with Unload + No Scope."
-  - "Validate DungeonRoute Aimed Shot target swaps toward Sentinel's Mark targets and quantify priority-target loss versus aggregate gain."
+  - "Validate Sentinel ST Moonlight Chakram casts around 4-6 seconds remaining in Trueshot and confirm all bounce damage remains inside the buff in current live logs."
+  - "Validate the observed ~640 ms ST and ~130 ms multi-target bounce cadence across latency/target-spacing cases."
+  - "Compare updated high-end Sentinel guides/logs after 2026-08-24 for adoption of the earlier ST Moonlight Chakram timing."
+  - "Continue validating Sentinel AoE Rapid Fire final-boundary clipping and Dark Ranger full-channel behavior."
