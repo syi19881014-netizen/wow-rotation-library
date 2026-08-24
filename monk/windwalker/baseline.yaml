@@ -1,27 +1,38 @@
 spec: Windwalker Monk
 version: 12.1-MID2
-updated: 2026-08-13
-status: STABLE
+updated: 2026-08-25
+status: PROVISIONAL
 source_notes:
   - "SimulationCraft: [Monk] WW APL update for MID2 (#11717)"
+  - "SimulationCraft: [Monk] WW MID2 Profiles and small APL adjustments (#11788), commit e4e92e9"
+  - "Method Windwalker 12.1 rotation guide, updated 2026-08-18"
+  - "Peak of Serenity Windwalker PvE guide, updated 2026-08-18"
 RESOURCE_MANAGER:
   - energy_overcap_prevention
   - chi_overcap_prevention
   - zenith_resource_mode
 PROC_MANAGER:
   - dance_of_chiji
-  - blackout_kick_proc
+  - combo_breaker
+  - unbroken_rhythm
 BURST_STATE:
   - heart_of_the_jade_serpent
   - heart_expiring
   - celestial_conduit_admission
   - zenith
+  - bloodlust
 HERO_TALENT:
   - Shado-Pan
   - Conduit_of_the_Celestials
 TARGET_BRANCH:
-  - single_or_two_target
-  - three_plus_aoe
+  - single_target
+  - multi_target
+set_branches:
+  MID2_4PC:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    targets: "2+"
+    effect: "Raise Spinning Crane Kick priority after Fists of Fury to consume the Season 2 4pc interaction."
+    practical_support: "Method 12.1 explicitly recommends Spinning Crane Kick after Fists of Fury on 2+ targets."
 zenith:
   suppress_unnecessary_tiger_palm: true
   prioritize:
@@ -29,17 +40,56 @@ zenith:
     - reset_fists_of_fury
     - reset_rising_sun_kick
     - free_blackout_kick
+  admission_updates_2026_08_24:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    notes:
+      - "In the Bloodlust/potion alignment branch, Rushing Wind Kick being active can now satisfy the release condition alongside active_enemies>2 or Rising Sun Kick being on cooldown."
+      - "Keep encounter-level hold overrides so Zenith does not lose a full use for a short-lived alignment gain."
+celestial_conduit:
+  hero_required: Conduit_of_the_Celestials
+  heart_gate:
+    rule: "Prefer Celestial Conduit when Heart of the Jade Serpent / Yu'lon's Avatar heart windows are not active."
+    evidence: "SimC e4e92e9 and Method 12.1 agree that Conduit should generally wait until the current Heart window is finished."
+  multi_target_release:
+    status: PROVISIONAL
+    simc_rule: "Celestial Conduit can be admitted in multi-target pressure when active_enemies exceeds 1 + Drinking Horn Cover rank during DungeonSlice or Bloodlust, even outside the narrower old Zenith-timing line."
+    practical_interpretation: "Treat this as an AoE/burst-window admission, not a universal target-count hard rule."
+  fight_end_override: "fight_remains < 4s may force Celestial Conduit."
+  removed_pre_conduit_fillers:
+    - "Do not require the old Blackout Kick/Tiger Palm filler pair solely to delay Celestial Conduit while Zenith has >11s remaining."
+zenith_stomp:
+  status: PROVISIONAL_HIGH_CONFIDENCE
+  single_target:
+    - "Use for low Chi or when Zenith is nearing expiry."
+    - "The updated SimC branch also allows Stomp when Celestial Conduit cooldown is >50s, improving charge/resource use outside an imminent Conduit window."
+    - "When Zenith has <5s remaining, Combo Breaker no longer blocks the low-Chi Stomp branch."
+  multi_target:
+    - "The updated SimC branch also allows Stomp when Celestial Conduit cooldown is >50s."
+    - "Avoid spending Stomp immediately before a ready Whirling Dragon Punch unless Chi is very low (<2 in the SimC benchmark)."
 heart_window:
   avoid_immediate_celestial_conduit_overlap: true
   expiring_window_priority: "Use high-value abilities such as Fists of Fury before expiry when beneficial."
-future:
-  S2_4PC_FOF_TO_SCK:
-    status: FUTURE
-    targets: "2+"
-    effect: "Raise Spinning Crane Kick priority after Fists of Fury set interaction."
+automation_architecture:
+  order:
+    - HERO_STATE
+    - SET_STATE
+    - HEART_STATE
+    - ZENITH_STATE
+    - TARGET_CONTEXT
+    - CELESTIAL_CONDUIT_ADMISSION
+    - ZENITH_STOMP_ADMISSION
+    - CORE_PRIORITY
+  safeguards:
+    - "Do not flatten Conduit/Shado-Pan into one cooldown state machine."
+    - "Keep exact target-count and cooldown thresholds configurable while PROVISIONAL."
+    - "Preserve Combo Strikes: never repeat an ability solely to satisfy a cooldown heuristic unless the game state makes it legal/optimal."
+    - "Resource overcap prevention may override short holds."
 live_verify:
-  s2_4pc_single_target_sck: true
+  celestial_conduit_multi_target_threshold: true
+  zenith_stomp_conduit_cd_50s_threshold: true
+  zenith_stomp_wdp_gate: true
   zenith_encounter_alignment_thresholds: true
+  season2_high_end_logs: true
 encounter_specific:
   touch_of_karma_damage_soak:
     default_enabled: false
