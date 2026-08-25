@@ -1,6 +1,6 @@
 spec: Marksmanship Hunter
 version: 12.1
-updated: 2026-08-24
+updated: 2026-08-25
 status: PROVISIONAL
 scope:
   hero_talents:
@@ -13,6 +13,7 @@ scope:
     - Precise Shots ordering around Rapid Fire
     - 2-target Precise Shots spender selection
     - Explosive Shot priority-target routing
+    - Explosive Shot repeat-cast / DungeonRoute admission
     - AoE Focus dumping
     - Trueshot / Explosive Shot cooldown alignment
     - 2-target Rapid Fire target routing
@@ -63,10 +64,26 @@ rules:
       safeguard: "Encounter overrides may still pin a must-kill target when failure cost exceeds modeled aggregate gain."
 
   explosive_shot_priority_routing:
-    status: PROVISIONAL
+    status: PROVISIONAL_HIGH_CONFIDENCE
     season2_4pc_multidot:
       action: "Allow Explosive Shot target-cycling/multidotting with the Season 2 4pc only when not in a DungeonRoute max-priority-damage context."
       priority_target_exception: "In DungeonRoute priority-target situations, do not cycle Explosive Shot across secondary targets solely for the 4pc."
+    base_repeat_cast_admission:
+      status: PROVISIONAL_HIGH_CONFIDENCE
+      source_commit: cd25e2c6fdb7cb7df94ce70ad840e96d902b5a6c
+      source_date: 2026-08-25
+      supersedes: "The 2026-08-24 DungeonRoute rule that blocked the normal Explosive Shot line whenever an Explosive Shot DoT was already active unless Unstable Trigger was up."
+      action: "For the normal single-target/current-target Explosive Shot line, do not hard-block the cast solely because an Explosive Shot is already active in DungeonRoute. The latest SimC APL removes the active_dot.explosive_shot / Unstable Trigger admission gate for Dark Ranger and Sentinel ST/AoE."
+      distinction: "This does NOT re-enable 4pc secondary-target spreading in priority-damage DungeonRoute. Target-cycling and same-target repeat-cast admission are separate decisions."
+      rationale: "Current Unstable Trigger mechanics incorporate remaining Explosive Shot damage when a legal second cast occurs, and the latest APL deliberately re-simplifies the base Explosive Shot admission instead of treating an active DoT as a universal no-cast state."
+      automation:
+        state_order:
+          - "DAMAGE_OBJECTIVE"
+          - "EXPLOSIVE_SHOT_TARGET_ROUTING"
+          - "TACTICAL_RELOAD / LOCK_AND_LOAD gate"
+          - "BASE_EXPLOSIVE_SHOT_ADMISSION"
+        policy: "Do not use active_explosive_shot=true as a universal hard veto. Keep the 4pc secondary-target spreading veto under DungeonRoute priority damage."
+        safeguard: "If live testing proves a specific same-target timing loses ticks in a build without Unstable Trigger, keep that as a build-specific LIVE_VERIFY exception rather than restoring the old global veto."
 
   aoe_focus_dump:
     status: PROVISIONAL
@@ -113,10 +130,13 @@ rules:
 
 evidence:
   simc:
-    latest_apl_commit: 9ad671eaff67a2344a3ec0646f0d7d4a2557cf52
-    latest_apl_date: 2026-08-24
-    summary: "Moonlight Chakram travel/bounce timing was corrected to ~640 ms per bounce on ST and ~130 ms on multi-target, and the Sentinel ST APL now starts the late Trueshot Chakram at <5s remaining rather than waiting until <1 GCD."
+    latest_apl_commit: cd25e2c6fdb7cb7df94ce70ad840e96d902b5a6c
+    latest_apl_date: 2026-08-25
+    summary: "MM APL cleanup/re-simplification removes the DungeonRoute active-Explosive-Shot/Unstable-Trigger hard gate from the normal Explosive Shot line across both hero trees while preserving separate 4pc target-cycling priority-damage restrictions; Dark Ranger AoE Rapid Fire is also simplified to require only a valid Trick Shots channel."
   practical:
+    icy_veins:
+      date_context: 2026-08-18_12.1
+      summary: "Current guide documents Unstable Trigger as allowing a second Explosive Shot within 3 seconds while incorporating remaining damage, and separately recommends avoiding secondary-target Explosive Shot spreading when M+ priority damage matters."
     method:
       date_context: 2026-08-17_12.1
       summary: "Current Sentinel priorities place Moonlight Chakram at the end of Trueshot, but the guide predates the newly measured ST/AoE bounce timing correction."
@@ -124,7 +144,7 @@ evidence:
       date_context: 2026-08-15_12.1
       summary: "Current priority likewise says to cast Moonlight Chakram when Trueshot is about to expire; it does not yet document the 5-second ST containment margin."
   official:
-    summary: "No Blizzard rotation note defines an exact Trueshot safety margin for Moonlight Chakram; the current timing is an observed live-mechanic/theorycraft model."
+    summary: "No Blizzard rotation note defines an exact Trueshot safety margin for Moonlight Chakram; Explosive Shot/Unstable Trigger behavior is current 12.1 class design and must be kept distinct from 4pc target-routing policy."
 confidence:
   single_target_no_clip: HIGH_SIMC_AND_PRACTICAL
   sentinel_aoe_final_boundary_clip: HIGH_SIMC_PROVISIONAL_PRACTICAL
@@ -133,6 +153,7 @@ confidence:
   two_target_raid_vs_dungeonroute_split: HIGH_SIMC_PROVISIONAL_PRACTICAL
   hydra_rapid_fire_every_tick: HIGH_SIMC_PROVISIONAL_LIVE
   moonlight_chakram_travel_model: HIGH_SIMC_MEASURED_PROVISIONAL_LIVE
+  explosive_shot_repeat_cast_admission: HIGH_SIMC_PROVISIONAL_PRACTICAL
 production_recommendation:
   stable_practical:
     - "Single-target Rapid Fire: complete the channel for both hero trees."
@@ -140,14 +161,16 @@ production_recommendation:
     - "Sentinel AoE Rapid Fire: allow final-boundary Multi-Shot clipping only with Unload/Precise Shots/GCD conditions."
     - "Keep priority-target exceptions for Precise Shots spending."
     - "Preserve Aimed Shot Focus reserve before low-priority AoE dumps."
+    - "Do not spread Season 2 4pc Explosive Shot to secondary targets in DungeonRoute priority-damage contexts solely for aggregate DPS."
   provisional_machine_logic:
     - "Gate Rapid Fire clipping by HERO_STATE before evaluating AoE context."
     - "Allow Sentinel ST Rapid Fire before consuming existing Precise Shots only for Unload + No Scope."
     - "Use explicit TOTAL_DAMAGE versus PRIORITY_TARGET branches for exactly 2 targets."
     - "Keep Hydra every-tick secondary-event modeling."
     - "For Sentinel ST Trueshot, begin Moonlight Chakram containment planning before the final GCD; current SimC benchmark uses a 5-second remaining threshold because ST bounces are much slower than AoE."
+    - "Do not use an already-active Explosive Shot as a universal DungeonRoute hard veto for the base ES action; keep target-spreading policy separate."
 live_verify:
+  - "Validate same-target Explosive Shot repeat timing in DungeonRoute across Tactical Reload versus Unstable Trigger builds and confirm no hidden live tick-loss case requires a narrower build-specific gate."
   - "Validate Sentinel ST Moonlight Chakram casts around 4-6 seconds remaining in Trueshot and confirm all bounce damage remains inside the buff in current live logs."
   - "Validate the observed ~640 ms ST and ~130 ms multi-target bounce cadence across latency/target-spacing cases."
-  - "Compare updated high-end Sentinel guides/logs after 2026-08-24 for adoption of the earlier ST Moonlight Chakram timing."
   - "Continue validating Sentinel AoE Rapid Fire final-boundary clipping and Dark Ranger full-channel behavior."
