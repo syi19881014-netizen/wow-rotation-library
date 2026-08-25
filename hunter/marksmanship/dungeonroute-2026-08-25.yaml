@@ -1,0 +1,50 @@
+spec: Marksmanship Hunter
+version: 12.1
+updated: 2026-08-25
+status: PROVISIONAL_HIGH_CONFIDENCE
+scope: Mythic+ / DungeonRoute
+source_commits:
+  - sha: 91a1ce9b6b483cf506f204e4e6d798837ead2d53
+    message: "[Hunter] MM APL Updates (DRoute Improvements)"
+  - sha: 599455c70a40b49431784137205d620d45a41b36
+    message: "[Hunter] Dark Ranger MM APL Updates"
+  - sha: f8fafc1cbd4075d8029f6aa4dac0f299854fa9c5
+    message: "[Hunter] MM APL DRoute Updates"
+    note: "Final same-day correction removes impractical opener implications from the intermediate commit while retaining the core DungeonRoute routing changes."
+
+rules:
+  explosive_shot_dungeonroute_overlap_control:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    sentinel:
+      behavior: "In DungeonRoute, do not repeatedly recast Explosive Shot into an already-active Explosive Shot by default. Recast remains legal when no Explosive Shot is active or Unstable Trigger explicitly permits the merge/recast state."
+      gate: "!dungeonroute OR active_dot.explosive_shot == 0 OR unstable_trigger_up"
+    dark_ranger:
+      behavior: "Apply the same DungeonRoute overlap-control principle: avoid redundant Explosive Shot recasts while an Explosive Shot is already active unless Unstable Trigger provides the intended recast state."
+      gate: "!dungeonroute OR active_enemies == 1 OR active_dot.explosive_shot == 0 OR unstable_trigger_up"
+    season2_4pc:
+      safeguard: "Keep the existing priority-target protection: do not spread Explosive Shot across secondary targets solely for aggregate 4pc value when max-priority damage is the objective."
+
+  sentinel_bulletstorm_aimed_shot_dungeonroute:
+    status: PROVISIONAL
+    behavior: "In Sentinel DungeonRoute with multiple enemies, an Aimed Shot may be admitted before the normal Rapid Fire branch when Sentinel's Mark is active/reacting and Bulletstorm is up."
+    gate: "dungeonroute AND active_enemies > 1 AND sentinels_mark_react AND bulletstorm_up"
+    rationale: "The latest APL explicitly inserts this marked-target Aimed Shot before Rapid Fire in the DungeonRoute ST branch and adds a marked-target Aimed Shot in Sentinel AoE with Bulletstorm."
+    safeguard: "Do not generalize this into 'Aimed Shot always before Rapid Fire'; it is a Sentinel + mark + Bulletstorm + DungeonRoute state branch."
+
+  intermediate_opener_reversion:
+    status: SUPERSEDED_INTERMEDIATE
+    behavior: "Do not front-load Volley before Explosive Shot merely because DungeonRoute is active. The immediately-following f8fafc1 commit explicitly removed those opener changes as impractical/cursed while preserving the core DRoute routing logic."
+
+  damage_objective:
+    status: STABLE_ARCHITECTURE
+    behavior: "Keep TOTAL_DAMAGE and PRIORITY_TARGET as separate objectives. DungeonRoute logic is not simply an AoE target-count branch."
+
+production_recommendation:
+  - "Keep current ST/AoE Rapid Fire cast-policy split from the main baseline."
+  - "In M+, treat Explosive Shot as a stateful DoT/recast object rather than a blind on-cooldown button."
+  - "Allow the Sentinel Bulletstorm + Sentinel's Mark Aimed Shot branch only in its narrow DungeonRoute context."
+  - "Do not adopt the reverted Volley-before-Explosive-Shot opener from the intermediate commit."
+
+live_verify:
+  - "Check top M+ logs for reduced redundant Explosive Shot overlap and for Sentinel marked-target Aimed Shot usage before Rapid Fire during Bulletstorm."
+  - "Validate whether exact routing changes with Unstable Trigger versus Tactical Reload and with/without Season 2 4pc."
