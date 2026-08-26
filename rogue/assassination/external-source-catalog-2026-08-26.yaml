@@ -1,0 +1,103 @@
+spec: Assassination Rogue
+project_version: "12.1 / Midnight"
+created: 2026-08-26
+purpose: "Pinned public-source catalog for later Codex source-level comparison. This file records references only and does not promote historical rules into the production baseline."
+status: RESEARCH_CANDIDATE
+
+analysis_policy:
+  theoretical_baseline: simulationcraft_mid2
+  historical_implementations:
+    - hero_rotation
+    - hekili
+    - wr_auto_rotation
+  rule: "Historical implementation logic must be re-derived against current 12.1/MID2 mechanics before entering baseline.yaml."
+  no_implicit_promotion: true
+
+sources:
+  simulationcraft_mid2:
+    role: THEORETICAL_BASELINE
+    status: CURRENT_REFERENCE
+    repository: simulationcraft/simc
+    pinned_commit: 02b39ce5a1c6614290a11e88d15a0d4785dfa738
+    files:
+      - path: engine/class_modules/apl/rogue/assassination.simc
+        url: https://github.com/simulationcraft/simc/blob/02b39ce5a1c6614290a11e88d15a0d4785dfa738/engine/class_modules/apl/rogue/assassination.simc
+      - path: profiles/MID2/MID2_Rogue_Assassination.simc
+        url: https://github.com/simulationcraft/simc/blob/02b39ce5a1c6614290a11e88d15a0d4785dfa738/profiles/MID2/MID2_Rogue_Assassination.simc
+      - path: profiles/MID2/MID2_Rogue_Assassination_Fatebound.simc
+        url: https://github.com/simulationcraft/simc/blob/02b39ce5a1c6614290a11e88d15a0d4785dfa738/profiles/MID2/MID2_Rogue_Assassination_Fatebound.simc
+      - path: ActionPriorityLists/default/rogue_assassination.simc
+        url: https://github.com/simulationcraft/simc/blob/02b39ce5a1c6614290a11e88d15a0d4785dfa738/ActionPriorityLists/default/rogue_assassination.simc
+    use_for:
+      - current action priority and variables
+      - resource pooling
+      - cooldown admission
+      - target-count branches
+      - current hero-talent and set interactions
+
+  hero_rotation:
+    role: HISTORICAL_IMPLEMENTATION_REFERENCE
+    status: SUPERSEDED_FOR_VERSION
+    repository: herotc/hero-rotation
+    pinned_commit: a6f95d484142de243081f33be5f134680bb12436
+    source_version_note: "Pinned repository state identifies itself as 11.2.7.01; not valid as a 12.1 rules source without re-validation."
+    file:
+      path: HeroRotation_Rogue/Assassination.lua
+      url: https://github.com/herotc/hero-rotation/blob/a6f95d484142de243081f33be5f134680bb12436/HeroRotation_Rogue/Assassination.lua
+    use_for:
+      - Lua state/priority implementation patterns
+      - multi-target target_if style selection
+      - dot strength/remains handling
+      - target time-to-die handling
+      - energy pooling/admission structure
+      - cooldown and vanish-window orchestration patterns
+    do_not_use_for:
+      - 12.1 numeric thresholds without verification
+      - 12.1 talent/set semantics without verification
+
+  hekili:
+    role: HISTORICAL_IMPLEMENTATION_REFERENCE
+    status: ARCHIVED_REFERENCE
+    repository: Hekili/hekili
+    pinned_commit: 36daec382e6557fd57a263bbfb060856ef9fe9d8
+    project_end_note: "Retail project ended at Midnight prepatch 12.0 on 2026-01-20; treat Assassination implementation as historical architecture/reference only."
+    file:
+      path: TheWarWithin/RogueAssassination.lua
+      url: https://github.com/Hekili/hekili/blob/36daec382e6557fd57a263bbfb060856ef9fe9d8/TheWarWithin/RogueAssassination.lua
+    use_for:
+      - APL-to-runtime translation patterns
+      - variable/action-list organization
+      - priority-helper state modeling
+    do_not_use_for:
+      - direct 12.1 production rules
+
+  wr_auto_rotation:
+    role: HISTORICAL_AUTO_EXECUTION_REFERENCE
+    status: SUPERSEDED_FOR_VERSION
+    repository: y368413/2-UI-Beta
+    pinned_commit: 890684fb6075f5ec007c6aa30209556c5d938f11
+    source_version_note: "File history is pinned to commit message 11.1.0 dated 2025-02-27."
+    file:
+      path: Interface/Addons/!WR/Classes/Rogue/Rogue-Assassination.lua
+      url: https://github.com/y368413/2-UI-Beta/blob/890684fb6075f5ec007c6aa30209556c5d938f11/Interface/Addons/!WR/Classes/Rogue/Rogue-Assassination.lua
+    use_for:
+      - full automatic-rotation control-flow patterns
+      - target scanning and enemy-count patterns
+      - dot-count/state integration patterns
+      - defensive/interrupt/output integration architecture
+    do_not_use_for:
+      - current damage priority
+      - current 12.1 thresholds/talents/sets
+
+excluded_sources:
+  cyber_deck:
+    repository: Netlaoer/Cyber_Deck
+    reason: "Current rogue_logic.py explicitly describes rogue base logic as not implemented and primarily maps one-key helper actions; not a complete Assassination decision engine."
+
+codex_expected_output:
+  - source-to-source semantic mapping table
+  - current-vs-historical rule classification
+  - implementation patterns worth porting
+  - stale mechanics and invalid assumptions
+  - missing modules/inputs in the current project baseline
+  - proposed changes separated into STABLE, PROVISIONAL, LIVE_VERIFY, and RESEARCH_CANDIDATE
