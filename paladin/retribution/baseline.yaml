@@ -1,55 +1,84 @@
 spec: retribution_paladin
 wow_version: "12.1 / Midnight"
-updated: 2026-08-23
+updated: 2026-08-26
 status: PROVISIONAL
 
 source_of_truth:
-  simc_commit: e4fda8cc0de6415e65c1eb54433938db5442b7da
-  simc_date_utc: 2026-08-22
+  simc_commit: 1e025d2c2d9936e295334871d7b5854d6f0ccb90
+  simc_pr_merge: c4acd568b0f15dc66aed16fef060a8b66a7da6eb
+  simc_date_utc: 2026-08-25
   public_guides:
     - source: Wowhead Retribution Paladin Rotation Guide
-      state: "12.1 guide updated 2026-08-17; recommends stacking Crusade quickly, but still puts Execution Sentence/cooldown value ahead of blindly rushing stacks; Hammer of Light should normally follow Wake of Ashes immediately"
+      state: "12.1 guide updated 2026-08-17; current public practical guidance still uses Execution Sentence before Wake of Ashes in the standard cooldown flow and emphasizes avoiding Holy Power / proc waste."
     - source: Method Retribution Paladin 12.1 Rotation Guide
-      state: "12.1 guide updated 2026-08-12; Templar opener uses Wake of Ashes -> Hammer of Light and describes Crusade as a Holy-Power-spend ramp during Avenging Wrath"
+      state: "12.1 guide updated 2026-08-12; Templar Execution Sentence opener remains Blade of Justice -> Avenging Wrath -> Execution Sentence -> Wake of Ashes -> Hammer of Light."
+    - source: Blizzard Hotfixes 2026-08-25
+      state: "No new Retribution PvE priority rewrite was documented in the August 25 hotfix notes; the new rotation branch is therefore a SimC/theorycraft update rather than an official prescribed sequence."
 
 material_update:
   summary:
-    - "Divine Storm admission remains explicit on generic 2+ targets, with additional Divine Arbiter / Empyrean Power / Seal of the Templar / Dawnlight state gates."
-    - "Blade of Justice proc protection remains a 2-stack Art of War / Righteous Cause overcap rule rather than a single-proc force-cast."
-    - "NEW 2026-08-22 live-bug model: when Crusade is active, Hammer of Light is observed/modelled by SimC bugs mode as granting 9 Crusade stacks, independent of its current 3 Holy Power cost."
-    - "The 9-stack behavior is not treated as intended design or a permanent rotation law; it is isolated as a LIVE_BUG branch because SimC only enables the override when bugs mode is active."
+    - "NEW 2026-08-25: SimC added an optional pre_es_wake variable. Default remains 0, preserving the practical Execution Sentence -> Wake flow; setting it to 1 creates an alternative Wake-before-Execution-Sentence cooldown sequence."
+    - "With pre_es_wake=1 and Crusade talented, Execution Sentence is held until Avenging Wrath/Crusade reaches at least 7 stacks, while Wake of Ashes is explicitly allowed before Execution Sentence. This is a theorycraft option, not a new universal production default."
+    - "Divine Storm admission was simplified for the new tier environment: generic 2+ targets or Divine Arbiter Verdict can admit Divine Storm, while Empyrean Legacy and Divine Arbiter Divine Storm remain explicit suppressors. Several former Empyrean Power / Seal / Dawnlight sub-gates were removed."
+    - "Ordinary Divine Storm / Templar's Verdict are no longer globally blocked merely because Hammer of Light is ready. Hammer of Light remains first in the finisher list, but if its own hold condition does not admit it, normal finishers may now proceed rather than creating a resource-flow stall."
+    - "Walk Into Light now has a 2-charge Hammer of Wrath overcap-protection line before the generic finisher call."
+    - "The earlier 2026-08-22 Hammer of Light -> 9 Crusade stacks live-bug branch remains isolated and kill-switchable; the new pre_es_wake option must not be justified solely by that bug."
 
 state_machine:
+  COOLDOWN_SEQUENCE:
+    status: PROVISIONAL_HIGH_CONFIDENCE_THEORY
+    inputs:
+      - pre_es_wake_mode
+      - execution_sentence_talented
+      - crusade_talented
+      - avenging_wrath_stacks
+      - wake_of_ashes_ready
+      - execution_sentence_ready
+      - target_ttd
+      - holy_flames
+      - expurgation_active
+    rules:
+      - when: "pre_es_wake_mode == 0"
+        action: "preserve standard practical sequence: admit Execution Sentence when Wake of Ashes is within about one GCD, then use Wake according to the normal cooldown gate"
+      - when: "pre_es_wake_mode == 1 and execution_sentence_talented"
+        action: "allow Wake of Ashes before Execution Sentence; if Crusade is talented, do not admit Execution Sentence until Avenging Wrath/Crusade stacks >= 7"
+      - when: "target_ttd <= 10"
+        action: "do not force a long alignment hold; preserve fight-end/short-target overrides"
+    safeguards:
+      - "Default pre_es_wake_mode remains 0 because current Wowhead/Method practical openers still place Execution Sentence before Wake of Ashes."
+      - "Treat pre_es_wake_mode=1 as a selectable benchmark/experimental branch, not an automatic replacement for every Templar or Herald build."
+      - "Do not hold enough to lose an entire Wake of Ashes or Execution Sentence use over the encounter."
+
   FINISHER_BRANCH:
     inputs:
       - effective_targets
       - holy_power
       - empyrean_legacy
-      - empyrean_power
       - divine_arbiter_verdict
       - divine_arbiter_divine_storm
-      - seal_of_the_templar
-      - dawnlight
       - hammer_of_light_ready
       - hammer_of_light_free
     rules:
-      - when: "effective_targets >= 2 and not empyrean_legacy and Divine Arbiter special-state gates do not suppress Divine Storm"
+      - when: "(effective_targets >= 2 or divine_arbiter_verdict) and not empyrean_legacy and not divine_arbiter_divine_storm"
         action: "admit Divine Storm before Templar's Verdict"
-      - when: "effective_targets == 1"
-        action: "default to Templar's Verdict unless a proc/state-specific Divine Storm rule is explicitly satisfied"
-      - when: "hammer_of_light_ready and not hammer_of_light_free"
-        action: "preserve Hammer of Light priority over ordinary finishers"
+      - when: "effective_targets == 1 and not divine_arbiter_verdict"
+        action: "default to Templar's Verdict after Hammer of Light's own admission check"
+      - when: "hammer_of_light_ready"
+        action: "evaluate Hammer of Light first; if its internal hold rule says wait, do not globally block ordinary Divine Storm/Templar's Verdict anymore"
 
   GENERATOR_PROC_PRESSURE:
     inputs:
       - art_of_war_stacks
       - righteous_cause_stacks
       - walk_into_light
+      - hammer_of_wrath_charges
       - avenging_wrath
     rules:
       - when: "art_of_war_stacks == 2 or righteous_cause_stacks == 2"
         action: "raise Blade of Justice to prevent proc-stack waste, subject to Walk Into Light / Avenging Wrath gate"
-      - when: "only one proc stack is present"
+      - when: "walk_into_light and hammer_of_wrath_charges == 2"
+        action: "raise Hammer of Wrath before the generic finisher call to prevent charge waste"
+      - when: "only one Art of War / Righteous Cause stack is present"
         action: "do not automatically force Blade of Justice above finishers/cooldowns solely for that proc"
 
   CRUSADE_HAMMER_OF_LIGHT_LIVE_BUG:
@@ -62,26 +91,30 @@ state_machine:
       - crusade_stacks
     rules:
       - when: "crusade_talented and avenging_wrath_active and hammer_of_light_cast_success and live_bug_mode"
-        action: "expect Crusade to jump by 9 stacks after Hammer of Light; immediately refresh the actual Crusade stack count instead of adding Holy Power cost"
+        action: "expect Crusade to jump by 9 stacks after Hammer of Light; immediately refresh the actual Crusade stack count instead of deriving stacks from Holy Power cost"
       - when: "live_bug_mode is false or Blizzard fixes the behavior"
         action: "fall back to intended spend-based Crusade stacking and remove the 9-stack override"
     safeguards:
-      - "Do not delay Execution Sentence merely to force an earlier 9-stack Hammer of Light; current Wowhead guidance still prioritizes putting Execution Sentence on cooldown before obsessing over Crusade ramp speed."
-      - "Do not assume every Hammer of Light proc should be consumed instantly: existing guide rules still allow holding a free Hammer of Light briefly for Avenging Wrath / Execution Sentence / relevant proc alignment."
-      - "After Hammer of Light, read the live Crusade stack value from the game if the runtime API can do so; do not rely on prediction because this behavior is explicitly bug-scoped."
+      - "Do not choose pre_es_wake_mode=1 merely to exploit the temporary 9-stack bug. The alternative sequence is separately exposed by the current SimC APL and must remain validatable after the bug is fixed."
+      - "After Hammer of Light, read the live Crusade stack value from the game if the runtime API can do so."
 
 production_policy:
   simc_benchmark:
-    status: HIGH_CONFIDENCE_THEORY_WITH_LIVE_BUG_BRANCH
-    rule: "mirror current 12.1 finisher/proc gates; when validating against SimC bugs mode, model Hammer of Light as 9 Crusade stacks during active Crusade"
-  practical_production:
+    status: HIGH_CONFIDENCE_THEORY_WITH_OPTIONAL_BRANCH
+    rule: "mirror the 2026-08-25 APL. Benchmark both pre_es_wake=0 and pre_es_wake=1 where relevant; do not flatten them into one opener."
+  high_end_practical:
     status: LIVE_VERIFY
-    rule: "keep current Templar opener/priority; exploit no special hold beyond existing Wake -> Hammer of Light timing, but refresh Crusade stacks immediately because live behavior may jump by 9"
+    rule: "retain Execution Sentence -> Wake of Ashes as the public-guide practical default until current Season 2 top-log sequences demonstrate a repeatable advantage for Wake-first / 7-stack Crusade alignment."
+  practical_production:
+    status: PROVISIONAL
+    rule: "use standard ES -> Wake by default; support a selectable Wake-first branch for controlled tests, while applying the simplified finisher admission and Hammer of Wrath 2-charge protection immediately."
   stable_human_simplification:
-    rule: "2+ meaningful targets generally Divine Storm; protect Holy Power from overcap; prioritize Blade of Justice more aggressively only at 2 proc stacks; with Crusade, use Hammer of Light in its normal high-priority window rather than inventing a separate bug-fishing sequence"
+    rule: "2+ meaningful targets generally use Divine Storm unless a tier/proc suppressor is active; avoid Holy Power and 2-charge Hammer of Wrath waste; keep the familiar ES -> Wake opener unless deliberately testing the new alternative."
 
 runtime_notes:
-  - "Do not encode Divine Storm as a target-count-only switch; the 12.1 APL has state-dependent suppression/admission around Divine Arbiter and Empyrean effects."
-  - "Track Art of War / Righteous Cause stack counts, not booleans, for proc-overcap prevention."
-  - "Track Crusade stacks from live aura state after Hammer of Light. SimC commit e4fda8c models 9 stacks only in bugs mode; this can be hotfixed at any time and must remain kill-switchable."
-  - "Keep exact 12.1 practical validation PROVISIONAL until current live raid/M+ sequence evidence accumulates."
+  - "Expose pre_es_wake_mode as an explicit build/strategy setting or benchmark branch. Do not infer it from target count alone."
+  - "Track Crusade/Avenging Wrath stacks live if using the Wake-first branch; Execution Sentence admission depends on the >=7-stack threshold when Crusade is talented."
+  - "Do not use hammer_of_light_ready as a global veto on all ordinary spenders; evaluate Hammer of Light's own hold condition, then allow Divine Storm/Templar's Verdict if appropriate."
+  - "Track Hammer of Wrath charges, not only readiness, when Walk Into Light is selected."
+  - "Keep the 9-stack Hammer of Light behavior kill-switchable and separate from the new tier-aware cooldown sequence."
+  - "Continue live-log validation before promoting exact opener choice to STABLE."
