@@ -1,6 +1,6 @@
 spec: Unholy Death Knight
 version: 12.1
-updated: 2026-08-20
+updated: 2026-08-27
 status: PROVISIONAL
 rules:
   sudden_doom:
@@ -16,6 +16,18 @@ rules:
     status: STABLE_MECHANIC
     source_commit: c4df10535dd4812a786e000e0241520d0da30db6
     note: "SimC corrected Dark Transformation to trigger_gcd=0 even when Blightfall is talented. The data-level 1.5s GCD belongs to the shared/replacement Blightfall action and must not be charged to Dark Transformation itself."
+  disease_eruption_target_modifier_behavior:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    source_commit: 0711f604384bf81fc724d869df3753e6c3326097
+    dread_plague_superstrain_erupt_ignores_target_damage_taken_modifiers: true
+    blightfall_consumption_erupt_ignores_target_damage_taken_modifiers: true
+    scourge_strike_plague_erupt_ignores_target_damage_taken_modifiers: true
+    normal_disease_ticks_still_use_normal_target_modifier_rules: true
+    soul_reaper_implication:
+      do_not_assume_eruption_damage_receives_soul_reaper_disease_amp: true
+      preserve_normal_plague_ticks_under_soul_reaper_when_practical: true
+      do_not_force_blightfall_early_just_to_fit_the_explosion_inside_soul_reaper: true
+    note: "SimC bugs-mode now divides target damage-taken multipliers back out of Dread Plague/Virulent Plague eruption damage for Superstrain erupts, Blightfall consumption erupts, and Scourge Strike eruption damage. This is a burst-valuation correction: ordinary plague ticks can still benefit from normal target modifiers, while the eruption portion should not be forecast as amplified by Soul Reaper or encounter vulnerability modifiers unless live evidence proves a specific exception."
   army_orders:
     epidemic_order:
       source: lesser_ghoul_pet
@@ -46,12 +58,15 @@ automation:
     - When a qualifying San'layn execute-talent trigger occurs, trigger Transfusion across all active Lesser Ghouls.
     - For Unholy, model each Transfusion application as an 8-second pet buff and allow overlapping/repeated applications; do not hard-cap each ghoul at one stack unless later live evidence establishes a cap.
     - Remove the old Lord of the Dead Magus Frostbolt shortened-GCD bug assumption.
+    - Track plague periodic damage and plague eruption damage as separate damage-event classes for burst valuation.
+    - Do not multiply Blightfall/Scourge Strike/Superstrain eruption forecasts by Soul Reaper or generic target damage-taken multipliers in the current live-bug model.
   safeguards:
     - Do not invent a hold rule solely from the Dark Transformation GCD correction; it changes execution scheduling, not the underlying priority target or cooldown valuation.
     - Do not double-submit Blightfall in the same execution slot as Dark Transformation; resolve the replacement/shared-GCD action separately after the transformation state is established.
     - Do not invent a new player GCD or hold rule solely from these pet-side fixes.
     - Keep Army of the Dead Scourge Strike ordering driven by nearby-enemy Order selection; player does not directly choose Death Order vs Epidemic Order.
     - Do not promote the exact maximum Transfusion stack count to STABLE until live-log or spell-data evidence confirms it.
+    - Do not move Blightfall earlier solely to catch Soul Reaper or an encounter vulnerability window; current evidence says the eruption itself ignores target damage-taken modifiers. Prefer preserving normal plague ticks under the modifier and use the established Blightfall timing unless another higher-value state overrides it.
 live_verify:
   dark_transformation_off_gcd_with_blightfall: false
   dark_transformation_blightfall_runtime_ordering: true
@@ -59,10 +74,14 @@ live_verify:
   transfusion_live_logs: true
   transfusion_exact_stack_ceiling: true
   lord_of_the_dead_cast_timing: true
-  note: "2026-08-20 SimC incorporated Blizzard-side bugfix behavior and then corrected Dark Transformation/Blightfall GCD semantics. Dark Transformation itself remains off-GCD even with Blightfall talented; runtime ordering of the immediate follow-up Blightfall remains worth live verification. Core player priority is not otherwise rewritten."
+  eruption_target_modifier_behavior: true
+  soul_reaper_blightfall_exact_live_timing: true
+  encounter_vulnerability_eruption_behavior: true
+  note: "2026-08-26 SimC added current-live bug behavior where Dread Plague/Virulent Plague eruption damage ignores target damage-taken modifiers. Core player priority is not fully rewritten, but burst valuation and any logic that tries to place Blightfall/eruption-heavy actions inside Soul Reaper or encounter vulnerability windows must be corrected."
 evidence:
   simc_commits:
     - ab6ab283c995a809410dc31029a0066700178cdb
     - aa424a18d8557a35d8b0e8924d0e135fb850e0d4
     - 7ea02cb865fd4dd07a5be52d5bb6a1fe538c487e
     - c4df10535dd4812a786e000e0241520d0da30db6
+    - 0711f604384bf81fc724d869df3753e6c3326097
