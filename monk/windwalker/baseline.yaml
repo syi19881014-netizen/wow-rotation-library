@@ -1,12 +1,14 @@
 spec: Windwalker Monk
 version: 12.1-MID2
-updated: 2026-08-25
+updated: 2026-08-27
 status: PROVISIONAL
 source_notes:
   - "SimulationCraft: [Monk] WW APL update for MID2 (#11717)"
   - "SimulationCraft: [Monk] WW MID2 Profiles and small APL adjustments (#11788), commit e4e92e9"
+  - "SimulationCraft: [Monk] MID2 Profile update & APL changes (#11805), commit a8bde88"
   - "Method Windwalker 12.1 rotation guide, updated 2026-08-18"
-  - "Peak of Serenity Windwalker PvE guide, updated 2026-08-18"
+  - "Wowhead Windwalker rotation guide, updated 2026-08-25"
+  - "Peak of Serenity Windwalker PvE guide, updated 2026-08-24"
 RESOURCE_MANAGER:
   - energy_overcap_prevention
   - chi_overcap_prevention
@@ -33,6 +35,12 @@ set_branches:
     targets: "2+"
     effect: "Raise Spinning Crane Kick priority after Fists of Fury to consume the Season 2 4pc interaction."
     practical_support: "Method 12.1 explicitly recommends Spinning Crane Kick after Fists of Fury on 2+ targets."
+invoke_xuen:
+  status: PROVISIONAL_HIGH_CONFIDENCE
+  conduit_build_resource_gate_2026_08_26:
+    simc_rule: "For the main Conduit/Xuen alignment line, require chi>2 OR (chi>1 AND energy<40) before Invoke Xuen."
+    purpose: "Avoid entering the major burst package in a weak Chi/Energy state that immediately forces low-value setup GCDs."
+    safeguard: "Do not use this as a universal Xuen hard gate; fight-end, high-target DungeonSlice, trinket-alignment and encounter overrides remain separate lines."
 zenith:
   suppress_unnecessary_tiger_palm: true
   prioritize:
@@ -43,13 +51,23 @@ zenith:
   admission_updates_2026_08_24:
     status: PROVISIONAL_HIGH_CONFIDENCE
     notes:
-      - "In the Bloodlust/potion alignment branch, Rushing Wind Kick being active can now satisfy the release condition alongside active_enemies>2 or Rising Sun Kick being on cooldown."
+      - "In the Bloodlust/potion alignment branch, Rushing Wind Kick being active can satisfy the release condition alongside active_enemies>2 or Rising Sun Kick being on cooldown."
       - "Keep encounter-level hold overrides so Zenith does not lose a full use for a short-lived alignment gain."
+  admission_updates_2026_08_26:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    notes:
+      - "The Bloodlust/potion alignment branch may refresh/re-enter Zenith when Fists of Fury is ready and no Heart/Unity Within Heart is active, instead of requiring Zenith to be fully absent in every case."
+      - "Treat this as burst-state renewal logic, not permission to overwrite a valuable active Heart window."
 celestial_conduit:
   hero_required: Conduit_of_the_Celestials
   heart_gate:
-    rule: "Prefer Celestial Conduit when Heart of the Jade Serpent / Yu'lon's Avatar heart windows are not active."
-    evidence: "SimC e4e92e9 and Method 12.1 agree that Conduit should generally wait until the current Heart window is finished."
+    status: HIGH_CONFIDENCE
+    rule: "Prefer Celestial Conduit when Heart of the Jade Serpent / Yu'lon's Avatar Heart windows are not active."
+    evidence: "SimC a8bde88, Method 12.1, and current Wowhead all support Heart-state gating as the main practical rule."
+  single_target_admission_2026_08_26:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    rule: "Single-target Celestial Conduit is now admitted from the core ST list without requiring Zenith to already be active, provided no Heart window is active and the WDP/Strike-of-the-Windlord state permits it."
+    practical_interpretation: "Do not model Zenith as a universal prerequisite for Conduit. Heart state and high-value cooldown state are the stronger admission gates."
   multi_target_release:
     status: PROVISIONAL
     simc_rule: "Celestial Conduit can be admitted in multi-target pressure when active_enemies exceeds 1 + Drinking Horn Cover rank during DungeonSlice or Bloodlust, even outside the narrower old Zenith-timing line."
@@ -57,12 +75,19 @@ celestial_conduit:
   fight_end_override: "fight_remains < 4s may force Celestial Conduit."
   removed_pre_conduit_fillers:
     - "Do not require the old Blackout Kick/Tiger Palm filler pair solely to delay Celestial Conduit while Zenith has >11s remaining."
+  low_chi_setup_2026_08_26:
+    status: PROVISIONAL
+    notes:
+      - "A low-Chi Zenith Stomp line (chi<2 or Zenith <2s) is evaluated before Conduit in the Conduit action list."
+      - "On single target without Harmonic Combo, Tiger Palm may be used during Zenith at chi<2 when no Heart is active to avoid entering Conduit resource-starved."
+      - "These are resource setup exceptions, not a return to generic filler-heavy Conduit delays."
 zenith_stomp:
   status: PROVISIONAL_HIGH_CONFIDENCE
   single_target:
     - "Use for low Chi or when Zenith is nearing expiry."
     - "The updated SimC branch also allows Stomp when Celestial Conduit cooldown is >50s, improving charge/resource use outside an imminent Conduit window."
     - "When Zenith has <5s remaining, Combo Breaker no longer blocks the low-Chi Stomp branch."
+    - "In the 2026-08-26 core ST list, the broader old Stomp line is restricted to Flurry Strikes; Conduit builds instead use the dedicated pre-Conduit low-Chi/Zenith-expiry setup line."
   multi_target:
     - "The updated SimC branch also allows Stomp when Celestial Conduit cooldown is >50s."
     - "Avoid spending Stomp immediately before a ready Whirling Dragon Punch unless Chi is very low (<2 in the SimC benchmark)."
@@ -74,6 +99,8 @@ automation_architecture:
     - HERO_STATE
     - SET_STATE
     - HEART_STATE
+    - RESOURCE_STATE
+    - XUEN_ADMISSION
     - ZENITH_STATE
     - TARGET_CONTEXT
     - CELESTIAL_CONDUIT_ADMISSION
@@ -81,11 +108,16 @@ automation_architecture:
     - CORE_PRIORITY
   safeguards:
     - "Do not flatten Conduit/Shado-Pan into one cooldown state machine."
-    - "Keep exact target-count and cooldown thresholds configurable while PROVISIONAL."
+    - "Do not require Zenith as a universal prerequisite for Celestial Conduit."
+    - "Keep exact target-count, Chi/Energy and cooldown thresholds configurable while PROVISIONAL."
     - "Preserve Combo Strikes: never repeat an ability solely to satisfy a cooldown heuristic unless the game state makes it legal/optimal."
     - "Resource overcap prevention may override short holds."
+    - "Heart windows remain protected from premature Celestial Conduit admission unless an explicit fight-end/encounter override applies."
 live_verify:
   celestial_conduit_multi_target_threshold: true
+  celestial_conduit_without_zenith_st: true
+  xuen_chi_energy_gate: true
+  pre_conduit_low_chi_setup: true
   zenith_stomp_conduit_cd_50s_threshold: true
   zenith_stomp_wdp_gate: true
   zenith_encounter_alignment_thresholds: true
