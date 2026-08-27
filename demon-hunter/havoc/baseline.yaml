@@ -1,15 +1,16 @@
 spec: Havoc Demon Hunter
 version: "12.1 / Midnight Season 2"
-updated: 2026-08-18
+updated: 2026-08-28
 status: PROVISIONAL
 scope:
-  source_change: "SimulationCraft Season 2 APL rewrite + MID2 4pc Essence Break CDR correction"
+  source_change: "SimulationCraft Season 2 APL rewrite + MID2 4pc Essence Break CDR correction + 2026-08-27 Demonsurge/Essence Break sequencing refinement"
   season_start: 2026-08-18
 summary:
   - "SimC PR #11740 replaced the prior highly conditional Havoc APL with a much shorter Season 2 priority list."
   - "The rewrite materially changes cooldown admission and de-emphasizes several old heuristic variables for Inertia, Eye Beam alignment, Blade Dance thresholds, Fury forecasting, and Burning Wound retargeting."
   - "2026-08-17 SimC correction confirms Eye Beam reducing Essence Break through Cycle of Hatred is a MID2 4pc-only interaction; no-4pc / pre-4pc branches must not receive this CDR."
-  - "Public practical guides are still behind the new Season 2 theoretical branch and cannot yet be treated as full confirmation of the new ordering."
+  - "2026-08-27 SimC refinement moves Essence Break ahead of pending Demonsurge Death Sweep/Annihilation consumption, so a ready Demonsurge spender should normally be covered by Essence Break rather than consumed first."
+  - "Current 12.1 Wowhead/Method practical guidance independently supports Essence Break before Death Sweep/Annihilation in the burst sequence, strengthening this specific rule beyond SimC-only evidence."
 rules:
   season2_simc_core:
     status: PROVISIONAL
@@ -23,6 +24,24 @@ rules:
       - "Essence Break is admitted when Eye Beam remains >4s; Death Sweep is prioritized during Essence Break or Demonsurge windows."
       - "Blade Dance / Death Sweep become broadly rotational again after higher hero/cooldown states instead of the old target-count use_blade_dance heuristic."
       - "A Fire Inside + Burning Wound Immolation Aura charge-capping prevention is retained in simplified form."
+  season2_apl_2026_08_27:
+    status: PROVISIONAL_HIGH_CONFIDENCE
+    source_commit: e6671d8778e65ece4f6d9027875db32785763a5c
+    source_title: "[Havoc] update APL per Shadarek"
+    rules:
+      - "If Death Sweep Demonsurge or Annihilation Demonsurge is available, evaluate/cast Essence Break before consuming that Demonsurge spender."
+      - "Death Sweep remains high priority when Essence Break is active or Death Sweep Demonsurge is available."
+      - "Annihilation is now explicitly admitted while Essence Break is active as well as when its Demonsurge version is available."
+      - "A Fire Inside + Burning Wound Immolation Aura charge-cap prevention is moved below the Essence Break -> Death Sweep/Annihilation burst package, so it should not steal a GCD from the short Essence Break window merely to avoid ordinary charge pressure."
+    automation_order:
+      - "PENDING_DEMONSURGE"
+      - "ESSENCE_BREAK_ADMISSION"
+      - "DEATH_SWEEP_OR_ANNIHILATION_CONSUMPTION"
+      - "IMMOLATION_AURA_CHARGE_PRESSURE"
+    forbidden:
+      - "Do not consume a pending Demonsurge Death Sweep/Annihilation immediately if Essence Break is legally available and can cover the spender."
+      - "Do not allow ordinary Immolation Aura charge-pressure logic to pre-empt the Essence Break burst package."
+      - "Do not interpret this as a generic rule to hold Demonsurge indefinitely; encounter end, target death, movement/range loss, and Essence Break unavailability remain overrides."
   mid2_4pc_cycle_of_hatred:
     status: PROVISIONAL_HIGH_CONFIDENCE
     hard_gate: "MID2_HAVOC_4PC_EQUIPPED"
@@ -34,20 +53,22 @@ rules:
       - "Do not forecast Essence Break cooldown from Eye Beam as though this CDR exists without the 4pc."
       - "Do not let the Season 2 set branch contaminate no-set SimC-equivalence tests or pre-4pc production logic."
   practical_current:
-    status: STABLE_PRACTICAL_12_0_7
+    status: PROVISIONAL_HIGH_CONFIDENCE_12_1
     notes:
-      - "Wowhead still describes Havoc around keeping Blade Dance, Immolation Aura, and Eye Beam on cooldown, aligning Essence Break to every second Eye Beam, and pairing Vengeful Retreat with Eye Beam for Inertia/Initiative."
-      - "Until 12.1 Season 2 raid/M+ logs and updated class-guide/theorycrafter evidence mature, do not replace the current practical production branch wholesale with the new SimC APL."
+      - "Wowhead 12.1 (Shadarek) states Essence Break is generally used on cooldown with MID2 4pc, except when Eye Beam will be available within ~4 seconds, in which case Essence Break is held until after Eye Beam."
+      - "Method 12.1 Aldrachi Reaver single-target opener explicitly sequences Eye Beam -> Essence Break -> Death Sweep -> Annihilation -> Death Sweep, independently supporting Essence Break-before-spender execution."
+      - "Public guide evidence therefore confirms the specific Essence Break burst ordering, but broader Season 2 simplifications (deleted Burning Wound retargeting, looser Inertia heuristics, etc.) remain live-verify rather than universally stable."
 automation:
   architecture:
     - "Separate hero-tree state (Fel-Scarred vs Aldrachi Reaver) from cooldown admission."
     - "Evaluate equipped-set state before any Cycle of Hatred -> Essence Break CDR prediction."
     - "Evaluate pending Demonsurge actions before Metamorphosis admission."
+    - "When a pending Demonsurge spender exists, run Essence Break admission before consuming that spender; then re-evaluate Death Sweep/Annihilation immediately."
     - "Track Eye Beam remaining, Metamorphosis remaining/ready, Blade Dance cooldown, Essence Break debuff/cooldown, Reaver's Glaive/Rending Strike/Glaive Flurry, Inertia/Initiative, Immolation Aura charges, Fury, target count, and MID2 set-piece state."
     - "Do not preserve deleted SimC helper variables as hard production rules unless live evidence independently supports them."
   recommended_policy:
     simc_branch: "Use Season 2 SimC ordering for theoretical benchmark simulations, with MID2 4pc mechanics enabled only when the profile actually has the 4pc."
-    production_branch: "Keep practical alignment safeguards until Season 2 live evidence validates the rewrite; no-4pc branches must use native Essence Break cooldown behavior."
+    production_branch: "Promote Essence Break-before-Demonsurge-spender ordering into the current 12.1 production candidate because SimC and current practical guides agree; retain encounter overrides and keep broader APL simplifications provisional."
     migration: "Promote individual Season 2 rules to STABLE only after guide/log/theorycrafter confirmation; preserve conflicts explicitly."
 evidence:
   simc:
@@ -59,19 +80,23 @@ evidence:
     set_fix_date: 2026-08-17
     set_fix_title: "[Havoc] fix Eye Beam giving EssB CDR without MID2 4pc"
     set_fix_materiality: "Prevents false Essence Break cooldown reduction in every non-4pc profile; materially affects no-set/2pc theoretical timing and automation cooldown prediction."
-  wowhead_tier:
-    checked: 2026-08-18
-    guide_state: "The 12.1 Havoc 4pc explicitly makes Essence Break apply and benefit from Cycle of Hatred, confirming this is set-gated rather than baseline behavior."
-  community_ptr:
-    checked: 2026-08-18
-    guide_state: "PTR feedback independently discussed Essence Break receiving Cycle of Hatred-style cooldown reduction specifically as a consequence of the 4pc."
+    sequencing_commit: e6671d8778e65ece4f6d9027875db32785763a5c
+    sequencing_date: 2026-08-27
+    sequencing_title: "[Havoc] update APL per Shadarek"
+    sequencing_materiality: "Moves Essence Break before pending Demonsurge Death Sweep/Annihilation consumption and moves ordinary Immolation Aura charge-pressure below the burst package."
+  wowhead_12_1:
+    checked: 2026-08-28
+    guide_state: "Shadarek's 12.1 guide says Essence Break is cast on cooldown with the Season 2 4pc except for a short Eye Beam hold, supporting Essence Break-centered burst admission."
+  method_12_1:
+    checked: 2026-08-28
+    guide_state: "Current Aldrachi Reaver ST opener is Eye Beam -> Essence Break -> Death Sweep -> Annihilation -> Death Sweep, directly matching the new spender-covering intent."
 confidence:
   simc_theoretical_branch: HIGH
   mid2_4pc_gate: HIGH
-  season2_live_practical_branch: LIVE_VERIFY
-  current_practical_branch: MEDIUM_HIGH
+  essence_break_before_demonsurge_spender: HIGH
+  broader_season2_live_practical_branch: LIVE_VERIFY
 live_verify:
-  - "Inspect first high-end Season 2 raid/M+ logs for Eye Beam -> Essence Break -> Death Sweep cadence with and without completed MID2 4pc."
+  - "Inspect high-end Season 2 raid/M+ logs for Eye Beam -> Essence Break -> Death Sweep/Annihilation cadence with completed MID2 4pc."
   - "Check whether top players continue explicit Vengeful Retreat/Inertia pairing every Eye Beam or adopt the looser SimC timing."
   - "Validate Aldrachi Reaver Rending Strike/Glaive Flurry consumption order by target count."
   - "Validate whether deleted Burning Wound retargeting and target-count Blade Dance heuristics are truly obsolete or merely unnecessary for the new profile."
